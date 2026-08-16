@@ -1,0 +1,223 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "HubAI Tenant API",
+    "version": "1.0.0",
+    "description": "API multi-tenant da HubAI Supplier Core. Cada whitelabel (tenant) acessa via Bearer token escopado.\n\nIsolamento: recursos de outros tenants retornam 404 (não 403). HubAI é a única fonte de verdade do estado do pedido.\n\nVer runbook em Obsidian/Projetos/Supplier Core - Runbook M5.md.",
+    "contact": { "name": "HubAI Suporte", "url": "https://hubai.io" }
+  },
+  "servers": [
+    { "url": "https://api.hubai.io/api/tenant-api/v1", "description": "Produção" }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/orders": {
+      "get": {
+        "summary": "Lista pedidos do tenant",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" }, "description": "Lista CSV de canonical_status (paid,accepted,...)" },
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" }, "description": "Cursor base64 {t,i} da resposta anterior" },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": {
+              "type": "object",
+              "properties": {
+                "data": { "type": "array", "items": { "$ref": "#/components/schemas/OrderSummary" } },
+                "next_cursor": { "type": "string", "nullable": true }
+              }
+            } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimit" }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "summary": "Detalhe de um pedido",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/OrderDetail" } } } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/orders/{id}/status": {
+      "patch": {
+        "summary": "Mudar status canônico do pedido",
+        "description": "Transição validada pela máquina de estados. Exige Idempotency-Key.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string", "maxLength": 128 } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object", "required": ["to"],
+            "properties": {
+              "to": { "type": "string", "enum": ["paid","accepted","in_fulfillment","shipped","delivered","completed","cancelled","refunded"] },
+              "reason": { "type": "string", "maxLength": 255 }
+            }
+          } } }
+        },
+        "responses": {
+          "200": { "description": "Transição aplicada" },
+          "409": { "description": "Transição inválida pra esse estado atual" },
+          "422": { "description": "Validação de payload" }
+        }
+      }
+    },
+    "/orders/{id}/tracking": {
+      "post": {
+        "summary": "Postar tracking — transiciona pedido pra shipped",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object", "required": ["carrier","code"],
+            "properties": {
+              "carrier": { "type": "string", "maxLength": 64 },
+              "code":    { "type": "string", "maxLength": 64 },
+              "url":     { "type": "string", "format": "url" },
+              "shipped_at": { "type": "string", "format": "date-time" }
+            }
+          } } }
+        },
+        "responses": { "200": { "description": "Tracking salvo + status shipped" } }
+      }
+    },
+    "/orders/{id}/cancel": {
+      "post": {
+        "summary": "Cancelar pedido",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "Idempotency-Key", "in": "header", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object", "required": ["reason"],
+            "properties": { "reason": { "type": "string", "maxLength": 255 } }
+          } } }
+        },
+        "responses": { "200": { "description": "Cancelado" } }
+      }
+    },
+    "/orders/{id}/refund": {
+      "post": {
+        "summary": "Refund (stub — não implementado, retorna 501)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "501": { "description": "Not implemented" } }
+      }
+    },
+    "/suppliers": {
+      "get": {
+        "summary": "Lista fornecedores",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/products": {
+      "get": {
+        "summary": "Lista produtos",
+        "parameters": [
+          { "name": "sku", "in": "query", "schema": { "type": "string" } },
+          { "name": "supplier_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/products/{sku}": {
+      "get": {
+        "summary": "Produto por SKU",
+        "parameters": [{ "name": "sku", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/events": {
+      "get": {
+        "summary": "Fallback polling — eventos do order_audit_log do tenant",
+        "parameters": [
+          { "name": "since", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "ht_live_xxx.secret"
+      }
+    },
+    "schemas": {
+      "OrderSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "order_number": { "type": "string" },
+          "canonical_status": { "type": "string" },
+          "status": { "type": "string" },
+          "source": { "type": "string" },
+          "channel_name": { "type": "string", "nullable": true },
+          "external_order_id": { "type": "string", "nullable": true },
+          "supplier_id": { "type": "integer" },
+          "client_id": { "type": "integer" },
+          "subtotal": { "type": "number" },
+          "total": { "type": "number" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OrderDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OrderSummary" },
+          {
+            "type": "object",
+            "properties": {
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" }, "email": { "type": "string" }, "phone": { "type": "string" }
+                }
+              },
+              "tracking": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "string" }, "url": { "type": "string" }, "carrier": { "type": "string" }
+                }
+              },
+              "invoice": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "string" }, "status": { "type": "string" }, "access_key": { "type": "string" }, "url": { "type": "string" }
+                }
+              },
+              "external_refs": { "type": "object", "additionalProperties": true }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "Unauthorized": { "description": "Token inválido ou ausente", "content": { "application/json": { "example": { "error": "unauthorized" } } } },
+      "NotFound":     { "description": "Recurso não encontrado (ou pertence a outro tenant)", "content": { "application/json": { "example": { "error": "not_found" } } } },
+      "RateLimit":    { "description": "Rate limit excedido (100 req/min/key)", "headers": { "Retry-After": { "schema": { "type": "integer" } } } }
+    }
+  },
+  "tags": [
+    { "name": "webhooks", "description": "Eventos enviados pra URL cadastrada. Headers: X-HubAI-Event, X-HubAI-Signature (sha256=hex HMAC do body com secret), X-HubAI-Idempotency-Key, X-HubAI-Delivery-Attempt, X-HubAI-Shadow (se modo shadow). Retry: 1m/5m/30m/2h/6h, depois dead." }
+  ]
+}

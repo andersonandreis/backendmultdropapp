@@ -1,0 +1,4229 @@
+openapi: 3.0.3
+info:
+  title: 'HubAI Platform API'
+  description: 'REST API for the HubAI dropshipping platform. Used by the Lovable frontend (hubai.io).'
+  version: 1.0.0
+servers:
+  -
+    url: 'https://api.hubai.io'
+tags:
+  -
+    name: Endpoints
+    description: ''
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      description: 'You can retrieve your token by visiting your dashboard and clicking <b>Generate API token</b>.'
+security:
+  -
+    default: []
+paths:
+  /api/documentation:
+    get:
+      summary: 'Handles the API request and renders the Swagger documentation view.'
+      operationId: handlesTheAPIRequestAndRendersTheSwaggerDocumentationView
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <title>HubAI API</title>\n    <link rel=\"stylesheet\" type=\"text/css\" href=\"https://api.hubai.io/api/swagger-json/asset/swagger-ui.css?v=66b916fbe27b7383f8c1094afbb52976\">\n    <link rel=\"icon\" type=\"image/png\" href=\"https://api.hubai.io/api/swagger-json/asset/favicon-32x32.png?v=40d4f2c38d1cd854ad463f16373cbcb6\" sizes=\"32x32\"/>\n    <link rel=\"icon\" type=\"image/png\" href=\"https://api.hubai.io/api/swagger-json/asset/favicon-16x16.png?v=f0ae831196d55d8f4115b6c5e8ec5384\" sizes=\"16x16\"/>\n    <style>\n    html\n    {\n        box-sizing: border-box;\n        overflow: -moz-scrollbars-vertical;\n        overflow-y: scroll;\n    }\n    *,\n    *:before,\n    *:after\n    {\n        box-sizing: inherit;\n    }\n\n    body {\n      margin:0;\n      background: #fafafa;\n    }\n    </style>\n    </head>\n\n<body >\n<div id=\"swagger-ui\"></div>\n\n<script src=\"https://api.hubai.io/api/swagger-json/asset/swagger-ui-bundle.js?v=45ccffa901bb9a18069b6c20d3363413\"></script>\n<script src=\"https://api.hubai.io/api/swagger-json/asset/swagger-ui-standalone-preset.js?v=7289ecfaa5507c519cb95606e6216dbb\"></script>\n<script>\n    window.onload = function() {\n        const urls = [];\n\n                    urls.push({name: \"HubAI API\", url: \"https://api.hubai.io/api/swagger-json?api-docs.json\"});\n        \n        // Build a system\n        const ui = SwaggerUIBundle({\n            dom_id: '#swagger-ui',\n            urls: urls,\n            \"urls.primaryName\": \"HubAI API\",\n            operationsSorter: null,\n            configUrl: null,\n            validatorUrl: null,\n            oauth2RedirectUrl: \"https://api.hubai.io/api/oauth2-callback\",\n\n            requestInterceptor: function(request) {\n                request.headers['X-CSRF-TOKEN'] = '';\n                return request;\n            },\n\n            presets: [\n                SwaggerUIBundle.presets.apis,\n                SwaggerUIStandalonePreset\n            ],\n\n            plugins: [\n                SwaggerUIBundle.plugins.DownloadUrl\n            ],\n\n            layout: \"StandaloneLayout\",\n            docExpansion : \"none\",\n            deepLinking: true,\n            filter: true,\n            persistAuthorization: \"false\",\n\n        })\n\n        window.ui = ui\n\n            }\n</script>\n</body>\n</html>\n"
+      tags:
+        - Endpoints
+  /api/swagger-json:
+    get:
+      summary: 'Handles requests for API documentation and returns the corresponding file content.'
+      operationId: handlesRequestsForAPIDocumentationAndReturnsTheCorrespondingFileContent
+      description: ''
+      parameters: []
+      responses:
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Unable to locate documentation file at: "/home/api.hubai.io/public_html/storage/api-docs/api-docs.json"'
+                properties:
+                  message:
+                    type: string
+                    example: 'Unable to locate documentation file at: "/home/api.hubai.io/public_html/storage/api-docs/api-docs.json"'
+      tags:
+        - Endpoints
+  '/api/swagger-json/asset/{asset}':
+    get:
+      summary: 'Serves a specific documentation asset for the Swagger UI interface.'
+      operationId: servesASpecificDocumentationAssetForTheSwaggerUIInterface
+      description: ''
+      parameters: []
+      responses:
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: '(consequatur) - this L5 Swagger asset is not allowed'
+                properties:
+                  message:
+                    type: string
+                    example: '(consequatur) - this L5 Swagger asset is not allowed'
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: asset
+        description: 'The asset.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/oauth2-callback:
+    get:
+      summary: 'Handles the OAuth2 callback and retrieves the required file for the redirect.'
+      operationId: handlesTheOAuth2CallbackAndRetrievesTheRequiredFileForTheRedirect
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "<!doctype html>\n<html lang=\"en-US\">\n<body>\n<script src=\"oauth2-redirect.js\"></script>\n</body>\n</html>\n"
+      tags:
+        - Endpoints
+  /api/health:
+    get:
+      summary: ''
+      operationId: getApiHealth
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  status: 'HubAI API is up and running'
+                properties:
+                  status:
+                    type: string
+                    example: 'HubAI API is up and running'
+      tags:
+        - Endpoints
+  /api/login:
+    post:
+      summary: ''
+      operationId: postApiLogin
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 'Must be a valid email address.'
+                  example: qkunze@example.com
+                password:
+                  type: string
+                  description: ''
+                  example: 'O[2UZ5ij-e/dl4m{o,'
+              required:
+                - email
+                - password
+  /api/logout:
+    post:
+      summary: ''
+      operationId: postApiLogout
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+  /api/v1/me:
+    get:
+      summary: ''
+      operationId: getApiV1Me
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/stores:
+    get:
+      summary: ''
+      operationId: getApiV1Stores
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    post:
+      summary: ''
+      operationId: postApiV1Stores
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                supplier_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the suppliers table.'
+                  example: 17
+                platform:
+                  type: string
+                  description: ''
+                  example: hubaisimulator
+                  enum:
+                    - mercadolivre
+                    - shopee
+                    - shopify
+                    - hubaisimulator
+                account_name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: mqeopfuudtdsufvyvddqa
+                pricing_strategy:
+                  type: string
+                  description: ''
+                  example: competitive
+                  enum:
+                    - margin
+                    - fixed
+                    - competitive
+                  nullable: true
+                price_margin:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 13
+                  nullable: true
+                tax_percentage:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 13
+                  nullable: true
+                marketplace_commission:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 28
+                  nullable: true
+              required:
+                - supplier_id
+                - platform
+                - account_name
+  '/api/v1/stores/{id}':
+    get:
+      summary: ''
+      operationId: getApiV1StoresId
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    put:
+      summary: ''
+      operationId: putApiV1StoresId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                pricing_strategy:
+                  type: string
+                  description: ''
+                  example: competitive
+                  enum:
+                    - margin
+                    - fixed
+                    - competitive
+                price_margin:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 1
+                tax_percentage:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 13
+                marketplace_commission:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 46
+                marketplace_fixed_fee:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 28
+                marketplace_shipping_fee:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 30
+                status:
+                  type: string
+                  description: ''
+                  example: pending
+                  enum:
+                    - active
+                    - inactive
+                    - pending
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the store.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/v1/suppliers:
+    get:
+      summary: ''
+      operationId: getApiV1Suppliers
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  '/api/v1/suppliers/{id}/catalog':
+    get:
+      summary: ''
+      operationId: getApiV1SuppliersIdCatalog
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the supplier.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/v1/products/batch-publish:
+    post:
+      summary: ''
+      operationId: postApiV1ProductsBatchPublish
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_ids:
+                  type: array
+                  description: ''
+                  example:
+                    - 17
+                  items:
+                    type: integer
+  /api/v1/products:
+    get:
+      summary: ''
+      operationId: getApiV1Products
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    post:
+      summary: ''
+      operationId: postApiV1Products
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the products table.'
+                  example: 17
+                product_variation_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the product_variations table.'
+                  example: 17
+                  nullable: true
+                marketplace_account_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the marketplace_accounts table.'
+                  example: 17
+                  nullable: true
+                custom_sku:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: mqeopfuudtdsufvyvddqa
+                custom_title:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: mniihfqcoynlazghdtqtq
+                custom_description:
+                  type: string
+                  description: ''
+                  example: consequatur
+                  nullable: true
+                custom_price:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 45
+                  nullable: true
+                pricing_mode:
+                  type: string
+                  description: ''
+                  example: margin
+                  enum:
+                    - manual
+                    - margin
+                    - competitive
+                  nullable: true
+                profit_margin:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+              required:
+                - product_id
+                - custom_sku
+                - custom_title
+  '/api/v1/products/{id}':
+    get:
+      summary: ''
+      operationId: getApiV1ProductsId
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    put:
+      summary: ''
+      operationId: putApiV1ProductsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                custom_title:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                custom_description:
+                  type: string
+                  description: ''
+                  example: consequatur
+                  nullable: true
+                custom_price:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 45
+                  nullable: true
+                pricing_mode:
+                  type: string
+                  description: ''
+                  example: margin
+                  enum:
+                    - manual
+                    - margin
+                    - competitive
+                profit_margin:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+                custom_weight_kg:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 16
+                  nullable: true
+                custom_height_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 50
+                  nullable: true
+                custom_width_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 55
+                  nullable: true
+                custom_length_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 19
+                  nullable: true
+    delete:
+      summary: ''
+      operationId: deleteApiV1ProductsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/products/{id}/images':
+    post:
+      summary: ''
+      operationId: postApiV1ProductsIdImages
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: 'Must be a file. Must not be greater than 10240 kilobytes.'
+                is_cover:
+                  type: boolean
+                  description: ''
+                  example: true
+                  nullable: true
+                position:
+                  type: integer
+                  description: 'Must be at least 0.'
+                  example: 73
+                  nullable: true
+              required:
+                - image
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/products/{id}/images/{imageId}':
+    delete:
+      summary: ''
+      operationId: deleteApiV1ProductsIdImagesImageId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: imageId
+        description: ''
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  '/api/v1/products/{id}/images/reorder':
+    put:
+      summary: ''
+      operationId: putApiV1ProductsIdImagesReorder
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: array
+                  description: 'Must have at least 1 items.'
+                  example:
+                    - []
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: ''
+                        example: 17
+                      position:
+                        type: integer
+                        description: 'Must be at least 0.'
+                        example: 45
+                    required:
+                      - id
+                      - position
+              required:
+                - order
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/products/{id}/video':
+    post:
+      summary: ''
+      operationId: postApiV1ProductsIdVideo
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                video_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'http://kunze.biz/iste-laborum-eius-est-dolor.html'
+              required:
+                - video_url
+    delete:
+      summary: ''
+      operationId: deleteApiV1ProductsIdVideo
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/products/{id}/variations':
+    get:
+      summary: ''
+      operationId: getApiV1ProductsIdVariations
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    post:
+      summary: ''
+      operationId: postApiV1ProductsIdVariations
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: amniihfqcoynlazghdtqt
+                price:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 56
+                cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 80
+                gtin:
+                  type: string
+                  description: 'Must not be greater than 14 characters.'
+                  example: bajwbpilpmuf
+                  nullable: true
+                attributes:
+                  type: object
+                  description: ''
+                  example: null
+                  properties: {  }
+                  nullable: true
+                position:
+                  type: integer
+                  description: 'Must be at least 0.'
+                  example: 28
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+              required:
+                - sku
+                - name
+                - price
+                - cost
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/products/{id}/variations/{vid}':
+    put:
+      summary: ''
+      operationId: putApiV1ProductsIdVariationsVid
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku:
+                  type: string
+                  description: ''
+                  example: null
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                price:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 1
+                cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 45
+                gtin:
+                  type: string
+                  description: 'Must not be greater than 14 characters.'
+                  example: niihfqcoynla
+                  nullable: true
+                attributes:
+                  type: object
+                  description: ''
+                  example: null
+                  properties: {  }
+                  nullable: true
+                position:
+                  type: integer
+                  description: 'Must be at least 0.'
+                  example: 89
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+    delete:
+      summary: ''
+      operationId: deleteApiV1ProductsIdVariationsVid
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: vid
+        description: ''
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/v1/orders:
+    get:
+      summary: ''
+      operationId: getApiV1Orders
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  '/api/v1/orders/{id}':
+    get:
+      summary: ''
+      operationId: getApiV1OrdersId
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the order.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/financial/balance:
+    get:
+      summary: ''
+      operationId: getApiV1FinancialBalance
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/financial/transactions:
+    get:
+      summary: ''
+      operationId: getApiV1FinancialTransactions
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/profile:
+    get:
+      summary: ''
+      operationId: getApiV1Profile
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    put:
+      summary: ''
+      operationId: putApiV1Profile
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_name:
+                  type: string
+                  description: 'Must not be greater than 200 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                  nullable: true
+                document:
+                  type: string
+                  description: 'Must not be greater than 18 characters.'
+                  example: amniihfqcoynlaz
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: ghdtqtqxbajwbpilp
+                  nullable: true
+  /api/v1/password:
+    put:
+      summary: ''
+      operationId: putApiV1Password
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password:
+                  type: string
+                  description: ''
+                  example: consequatur
+                new_password:
+                  type: string
+                  description: 'Must be at least 8 characters.'
+                  example: mqeopfuudtdsufvyvddqamniihfqcoynlazghdtqtqxbajwbpilpmufinllwloauydlsmsjuryv
+              required:
+                - current_password
+                - new_password
+  /api/v1/plans:
+    get:
+      summary: ''
+      operationId: getApiV1Plans
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/subscription:
+    get:
+      summary: ''
+      operationId: getApiV1Subscription
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  '/api/v1/orders/{id}/label':
+    post:
+      summary: ''
+      operationId: postApiV1OrdersIdLabel
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the order.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/orders/{id}/invoice':
+    post:
+      summary: ''
+      operationId: postApiV1OrdersIdInvoice
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoice_number:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: vmqeopfuudtdsufvy
+                  nullable: true
+                invoice_series:
+                  type: string
+                  description: 'Must not be greater than 10 characters.'
+                  example: vddqamnii
+                  nullable: true
+                invoice_access_key:
+                  type: string
+                  description: 'Must be 44 characters.'
+                  example: hfqcoynlazghdtqtqxbajwbpilpmufinllwloauydlsm
+                  nullable: true
+                invoice_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'http://hirthe.info/molestiae-vel-natus-ex-dicta-hic-inventore'
+                  nullable: true
+                invoice_xml_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'https://schuppe.biz/non-quia-dicta-in.html'
+                  nullable: true
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the order.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/orders/{id}/ship':
+    post:
+      summary: ''
+      operationId: postApiV1OrdersIdShip
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tracking_number:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                  nullable: true
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the order.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/supplier/products:
+    get:
+      summary: ''
+      operationId: getApiV1SupplierProducts
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    post:
+      summary: ''
+      operationId: postApiV1SupplierProducts
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                sku:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: amniihfqcoynlazghdtqt
+                cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 56
+                price:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 80
+                description:
+                  type: string
+                  description: ''
+                  example: 'Dolores dolorum amet iste laborum eius est dolor.'
+                  nullable: true
+                ean:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: dtdsufvyvddqamnii
+                  nullable: true
+                brand:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: hfqcoynlazghdtqtqxbaj
+                  nullable: true
+                weight_kg:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 79
+                  nullable: true
+                height_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 5
+                  nullable: true
+                width_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 54
+                  nullable: true
+                length_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 31
+                  nullable: true
+                video_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'https://www.moen.com/quia-ipsam-ut-iusto-iusto-accusamus-iusto-similique'
+                  nullable: true
+              required:
+                - name
+                - sku
+                - cost
+                - price
+  '/api/v1/supplier/products/{id}':
+    put:
+      summary: ''
+      operationId: putApiV1SupplierProductsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 1
+                price:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 45
+                description:
+                  type: string
+                  description: ''
+                  example: 'Dolores dolorum amet iste laborum eius est dolor.'
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+                ean:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: dtdsufvyvddqamnii
+                  nullable: true
+                brand:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: hfqcoynlazghdtqtqxbaj
+                  nullable: true
+                weight_kg:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 79
+                  nullable: true
+                height_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 5
+                  nullable: true
+                width_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 54
+                  nullable: true
+                length_cm:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 31
+                  nullable: true
+                video_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'https://www.moen.com/quia-ipsam-ut-iusto-iusto-accusamus-iusto-similique'
+                  nullable: true
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/v1/supplier/products/{id}/stock':
+    put:
+      summary: ''
+      operationId: putApiV1SupplierProductsIdStock
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  description: 'Must be at least 0.'
+                  example: 73
+              required:
+                - quantity
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the product.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/supplier/orders:
+    get:
+      summary: ''
+      operationId: getApiV1SupplierOrders
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/supplier/dashboard:
+    get:
+      summary: ''
+      operationId: getApiV1SupplierDashboard
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/webhook-configs:
+    get:
+      summary: ''
+      operationId: getApiV1WebhookConfigs
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    post:
+      summary: ''
+      operationId: postApiV1WebhookConfigs
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                security_header:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: amniihfqcoynlazghdtqt
+                  nullable: true
+                event_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: qxbajwbpilpmufinllwlo
+                  nullable: true
+                expected_event_value:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: auydlsmsjuryvojcybzvr
+                  nullable: true
+                customer_email_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: byickznkygloigmkwxphl
+                  nullable: true
+                amount_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: vazjrcnfbaqywuxhgjjmz
+                  nullable: true
+                subscription_id_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: uxjubqouzswiwxtrkimfc
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+              required:
+                - name
+  '/api/v1/webhook-configs/{id}':
+    put:
+      summary: ''
+      operationId: putApiV1WebhookConfigsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: ''
+                  example: null
+                security_header:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                  nullable: true
+                event_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: amniihfqcoynlazghdtqt
+                  nullable: true
+                expected_event_value:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: qxbajwbpilpmufinllwlo
+                  nullable: true
+                customer_email_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: auydlsmsjuryvojcybzvr
+                  nullable: true
+                amount_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: byickznkygloigmkwxphl
+                  nullable: true
+                subscription_id_field:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: vazjrcnfbaqywuxhgjjmz
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+    delete:
+      summary: ''
+      operationId: deleteApiV1WebhookConfigsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the webhook config.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/v1/event-subscriptions:
+    get:
+      summary: ''
+      operationId: getApiV1EventSubscriptions
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    post:
+      summary: ''
+      operationId: postApiV1EventSubscriptions
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_type:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                channels:
+                  type: array
+                  description: ''
+                  example:
+                    - webhook
+                  items:
+                    type: string
+                    enum:
+                      - webhook
+                      - email
+                      - push
+                webhook_url:
+                  type: string
+                  description: 'Must be a valid URL. Must not be greater than 500 characters.'
+                  example: 'http://www.kunde.com/'
+                  nullable: true
+                webhook_secret:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: iihfqcoynlazghdtqtqxb
+                  nullable: true
+                supplier_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the suppliers table.'
+                  example: 17
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+              required:
+                - event_type
+  '/api/v1/marketplace/connect/{platform}':
+    get:
+      summary: ''
+      operationId: getApiV1MarketplaceConnectPlatform
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: platform
+        description: ''
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/v1/marketplace/status:
+    get:
+      summary: ''
+      operationId: getApiV1MarketplaceStatus
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  '/api/v1/marketplace/{platform}/publish':
+    post:
+      summary: ''
+      operationId: postApiV1MarketplacePlatformPublish
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the products table.'
+                  example: 17
+                title:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: mqeopfuudtdsufvyvddqa
+                  nullable: true
+                price:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 45
+                  nullable: true
+                category_id:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: niihfqcoynlazghdtqtqx
+                  nullable: true
+                integrations:
+                  type: array
+                  description: ''
+                  example:
+                    - 17
+                  items:
+                    type: integer
+              required:
+                - product_id
+    parameters:
+      -
+        in: path
+        name: platform
+        description: ''
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/v1/webhooks/mercadolivre/questions:
+    post:
+      summary: 'Webhook receptor de perguntas do Mercado Livre.'
+      operationId: webhookReceptorDePerguntasDoMercadoLivre
+      description: "DESATIVADO: endpoint mockado, sem integracao real com OpenAI.\nMantido para nao quebrar a rota configurada no ML."
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+  '/api/v1/webhooks/pagamentos/{slug}':
+    post:
+      summary: ''
+      operationId: postApiV1WebhooksPagamentosSlug
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'The slug of the pagamento.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  '/api/oauth/{platform}/redirect':
+    get:
+      summary: "Inicia o fluxo OAuth. Aceita client_id e supplier_id como query params\npara permitir que o frontend (hubai.io) inicie o fluxo sem Sanctum auth."
+      operationId: iniciaOFluxoOAuthAceitaClientIdESupplierIdComoQueryParamsParaPermitirQueOFrontendhubaiioInicieOFluxoSemSanctumAuth
+      description: ''
+      parameters: []
+      responses:
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  error: 'client_id obrigatório'
+                properties:
+                  error:
+                    type: string
+                    example: 'client_id obrigatório'
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: platform
+        description: ''
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  '/api/oauth/{platform}/callback':
+    get:
+      summary: 'Callback OAuth. Troca code por tokens REAIS e salva MarketplaceAccount.'
+      operationId: callbackOAuthTrocaCodePorTokensREAISESalvaMarketplaceAccount
+      description: ''
+      parameters: []
+      responses:
+        302:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "<!DOCTYPE html>\n<html>\n    <head>\n        <meta charset=\"UTF-8\" />\n        <meta http-equiv=\"refresh\" content=\"0;url='https://hubai.io/painel-cliente/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o'\" />\n\n        <title>Redirecting to https://hubai.io/painel-cliente/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o</title>\n    </head>\n    <body>\n        Redirecting to <a href=\"https://hubai.io/painel-cliente/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o\">https://hubai.io/painel-cliente/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o</a>.\n    </body>\n</html>"
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: platform
+        description: ''
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/public/marketplace-accounts:
+    get:
+      summary: ''
+      operationId: getApiPublicMarketplaceAccounts
+      description: ''
+      parameters: []
+      responses:
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  error: 'client_id required'
+                properties:
+                  error:
+                    type: string
+                    example: 'client_id required'
+      tags:
+        - Endpoints
+  /api/public/suppliers:
+    get:
+      summary: ''
+      operationId: getApiPublicSuppliers
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      id: 10
+                      legacy_id: 20
+                      user_id: 1
+                      type: warehouse
+                      prefix: DRO
+                      company_name: 'Drop Auto Peças - SP'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 02082-030
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 65282
+                    -
+                      id: 11
+                      legacy_id: 25
+                      user_id: 1
+                      type: warehouse
+                      prefix: ENV
+                      company_name: 'Envio Nacional'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '20060070'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 3168
+                    -
+                      id: 9
+                      legacy_id: 13
+                      user_id: 1
+                      type: warehouse
+                      prefix: ENV
+                      company_name: 'Envio Nacional - RJ'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '20060070'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 3108
+                    -
+                      id: 7
+                      legacy_id: 61
+                      user_id: 1
+                      type: warehouse
+                      prefix: PLU
+                      company_name: 'Plug Lar'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '13500240'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T16:58:44.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 2247
+                    -
+                      id: 1
+                      legacy_id: null
+                      user_id: 1
+                      type: warehouse
+                      prefix: DROPRIO
+                      company_name: DropRio
+                      display_name: DropRio
+                      theme_color: null
+                      document: '00000000000000'
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: null
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-04-24T02:47:53.000000Z'
+                      updated_at: '2026-04-24T02:47:53.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 2186
+                    -
+                      id: 22
+                      legacy_id: 432
+                      user_id: 1
+                      type: warehouse
+                      prefix: DRO
+                      company_name: 'Drop2you RJ 1'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '20041005'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 1635
+                    -
+                      id: 19
+                      legacy_id: 410
+                      user_id: 1
+                      type: warehouse
+                      prefix: CLI
+                      company_name: 'Clique RJ'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 20070-022
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 1559
+                    -
+                      id: 17
+                      legacy_id: 373
+                      user_id: 1
+                      type: warehouse
+                      prefix: UPD
+                      company_name: 'UPDROP - GALPAO SP DROP'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 03891-000
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 1016
+                    -
+                      id: 25
+                      legacy_id: 447
+                      user_id: 1
+                      type: warehouse
+                      prefix: MES
+                      company_name: 'M&E store atacado e drop'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '24800025'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 984
+                    -
+                      id: 12
+                      legacy_id: 27
+                      user_id: 1
+                      type: warehouse
+                      prefix: MIX
+                      company_name: 'Mix Variedades - SP'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 04679-000
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 886
+                    -
+                      id: 27
+                      legacy_id: 465
+                      user_id: 1
+                      type: warehouse
+                      prefix: PEG
+                      company_name: 'Peg Comercial Revenda'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '81650060'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 582
+                    -
+                      id: 13
+                      legacy_id: 53
+                      user_id: 1
+                      type: warehouse
+                      prefix: JTD
+                      company_name: JTDrop
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 200500-08
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 561
+                    -
+                      id: 33
+                      legacy_id: 600
+                      user_id: 1
+                      type: warehouse
+                      prefix: UNI
+                      company_name: UnicDrop
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '05077000'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:58.000000Z'
+                      updated_at: '2026-05-13T17:04:58.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 397
+                    -
+                      id: 29
+                      legacy_id: 488
+                      user_id: 1
+                      type: warehouse
+                      prefix: ATR
+                      company_name: atravessadorpro
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '09725560'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 342
+                    -
+                      id: 30
+                      legacy_id: 498
+                      user_id: 1
+                      type: warehouse
+                      prefix: MUL
+                      company_name: Multdrop
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 72.701-997
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 339
+                    -
+                      id: 34
+                      legacy_id: 608
+                      user_id: 1
+                      type: warehouse
+                      prefix: LET
+                      company_name: 'Letielly Shore'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '35603000'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:58.000000Z'
+                      updated_at: '2026-05-13T17:04:58.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 239
+                    -
+                      id: 24
+                      legacy_id: 446
+                      user_id: 1
+                      type: warehouse
+                      prefix: GAL
+                      company_name: 'Galpão 23 SP'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '06365000'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 194
+                    -
+                      id: 23
+                      legacy_id: 437
+                      user_id: 1
+                      type: warehouse
+                      prefix: DRO
+                      company_name: 'Drop2you SP 1'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '02186000'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 171
+                    -
+                      id: 20
+                      legacy_id: 426
+                      user_id: 1
+                      type: warehouse
+                      prefix: SMA
+                      company_name: 'Smart Tech'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 04009-003
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 139
+                    -
+                      id: 21
+                      legacy_id: 430
+                      user_id: 1
+                      type: warehouse
+                      prefix: BRS
+                      company_name: 'Brás Mania Drop'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 13306-123
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 139
+                    -
+                      id: 15
+                      legacy_id: 58
+                      user_id: 1
+                      type: warehouse
+                      prefix: TIT
+                      company_name: Titanium
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '14140-000 '
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 132
+                    -
+                      id: 8
+                      legacy_id: 11
+                      user_id: 1
+                      type: warehouse
+                      prefix: DRO
+                      company_name: 'Drop - SP'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '03694001'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 112
+                    -
+                      id: 18
+                      legacy_id: 403
+                      user_id: 1
+                      type: warehouse
+                      prefix: VIA
+                      company_name: 'Via/Nutri Suplementos'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 88136-220
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 54
+                    -
+                      id: 32
+                      legacy_id: 503
+                      user_id: 1
+                      type: warehouse
+                      prefix: SAL
+                      company_name: SALES
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '03471130'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 45
+                    -
+                      id: 14
+                      legacy_id: 54
+                      user_id: 1
+                      type: warehouse
+                      prefix: INF
+                      company_name: 'Infinity Drop '
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '06144200'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 35
+                    -
+                      id: 16
+                      legacy_id: 66
+                      user_id: 1
+                      type: warehouse
+                      prefix: RED
+                      company_name: 'REDAGRO COMERCIO '
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 37842-899
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 11
+                    -
+                      id: 28
+                      legacy_id: 485
+                      user_id: 1
+                      type: warehouse
+                      prefix: THI
+                      company_name: 'thiago teste'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 200500-08
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 1
+                    -
+                      id: 2
+                      legacy_id: null
+                      user_id: 1
+                      type: warehouse
+                      prefix: PLUGLAR
+                      company_name: PlugLar
+                      display_name: PlugLar
+                      theme_color: null
+                      document: '00000000000000'
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: null
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-04-24T03:50:26.000000Z'
+                      updated_at: '2026-04-24T03:50:26.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 0
+                    -
+                      id: 26
+                      legacy_id: 454
+                      user_id: 1
+                      type: warehouse
+                      prefix: TES
+                      company_name: Teste
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: 40000-000
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 0
+                    -
+                      id: 31
+                      legacy_id: 500
+                      user_id: 1
+                      type: warehouse
+                      prefix: LOG
+                      company_name: 'LogiDrop SP'
+                      display_name: null
+                      theme_color: null
+                      document: ''
+                      phone: null
+                      logo: null
+                      description: null
+                      address: null
+                      city: null
+                      state: null
+                      zipcode: '07094000'
+                      is_active: 1
+                      allows_direct_payment: 0
+                      pix_fee: '0.00'
+                      is_factory: 0
+                      supports_meli_flex: 0
+                      flex_fee: '0.00'
+                      allows_direct_deposit: 1
+                      created_at: '2026-05-13T17:04:57.000000Z'
+                      updated_at: '2026-05-13T17:04:57.000000Z'
+                      owner_client_id: null
+                      is_private: 0
+                      products_count: 0
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        id: 10
+                        legacy_id: 20
+                        user_id: 1
+                        type: warehouse
+                        prefix: DRO
+                        company_name: 'Drop Auto Peças - SP'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 02082-030
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 65282
+                      -
+                        id: 11
+                        legacy_id: 25
+                        user_id: 1
+                        type: warehouse
+                        prefix: ENV
+                        company_name: 'Envio Nacional'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '20060070'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 3168
+                      -
+                        id: 9
+                        legacy_id: 13
+                        user_id: 1
+                        type: warehouse
+                        prefix: ENV
+                        company_name: 'Envio Nacional - RJ'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '20060070'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 3108
+                      -
+                        id: 7
+                        legacy_id: 61
+                        user_id: 1
+                        type: warehouse
+                        prefix: PLU
+                        company_name: 'Plug Lar'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '13500240'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T16:58:44.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 2247
+                      -
+                        id: 1
+                        legacy_id: null
+                        user_id: 1
+                        type: warehouse
+                        prefix: DROPRIO
+                        company_name: DropRio
+                        display_name: DropRio
+                        theme_color: null
+                        document: '00000000000000'
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: null
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-04-24T02:47:53.000000Z'
+                        updated_at: '2026-04-24T02:47:53.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 2186
+                      -
+                        id: 22
+                        legacy_id: 432
+                        user_id: 1
+                        type: warehouse
+                        prefix: DRO
+                        company_name: 'Drop2you RJ 1'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '20041005'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 1635
+                      -
+                        id: 19
+                        legacy_id: 410
+                        user_id: 1
+                        type: warehouse
+                        prefix: CLI
+                        company_name: 'Clique RJ'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 20070-022
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 1559
+                      -
+                        id: 17
+                        legacy_id: 373
+                        user_id: 1
+                        type: warehouse
+                        prefix: UPD
+                        company_name: 'UPDROP - GALPAO SP DROP'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 03891-000
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 1016
+                      -
+                        id: 25
+                        legacy_id: 447
+                        user_id: 1
+                        type: warehouse
+                        prefix: MES
+                        company_name: 'M&E store atacado e drop'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '24800025'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 984
+                      -
+                        id: 12
+                        legacy_id: 27
+                        user_id: 1
+                        type: warehouse
+                        prefix: MIX
+                        company_name: 'Mix Variedades - SP'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 04679-000
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 886
+                      -
+                        id: 27
+                        legacy_id: 465
+                        user_id: 1
+                        type: warehouse
+                        prefix: PEG
+                        company_name: 'Peg Comercial Revenda'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '81650060'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 582
+                      -
+                        id: 13
+                        legacy_id: 53
+                        user_id: 1
+                        type: warehouse
+                        prefix: JTD
+                        company_name: JTDrop
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 200500-08
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 561
+                      -
+                        id: 33
+                        legacy_id: 600
+                        user_id: 1
+                        type: warehouse
+                        prefix: UNI
+                        company_name: UnicDrop
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '05077000'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:58.000000Z'
+                        updated_at: '2026-05-13T17:04:58.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 397
+                      -
+                        id: 29
+                        legacy_id: 488
+                        user_id: 1
+                        type: warehouse
+                        prefix: ATR
+                        company_name: atravessadorpro
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '09725560'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 342
+                      -
+                        id: 30
+                        legacy_id: 498
+                        user_id: 1
+                        type: warehouse
+                        prefix: MUL
+                        company_name: Multdrop
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 72.701-997
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 339
+                      -
+                        id: 34
+                        legacy_id: 608
+                        user_id: 1
+                        type: warehouse
+                        prefix: LET
+                        company_name: 'Letielly Shore'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '35603000'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:58.000000Z'
+                        updated_at: '2026-05-13T17:04:58.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 239
+                      -
+                        id: 24
+                        legacy_id: 446
+                        user_id: 1
+                        type: warehouse
+                        prefix: GAL
+                        company_name: 'Galpão 23 SP'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '06365000'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 194
+                      -
+                        id: 23
+                        legacy_id: 437
+                        user_id: 1
+                        type: warehouse
+                        prefix: DRO
+                        company_name: 'Drop2you SP 1'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '02186000'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 171
+                      -
+                        id: 20
+                        legacy_id: 426
+                        user_id: 1
+                        type: warehouse
+                        prefix: SMA
+                        company_name: 'Smart Tech'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 04009-003
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 139
+                      -
+                        id: 21
+                        legacy_id: 430
+                        user_id: 1
+                        type: warehouse
+                        prefix: BRS
+                        company_name: 'Brás Mania Drop'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 13306-123
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 139
+                      -
+                        id: 15
+                        legacy_id: 58
+                        user_id: 1
+                        type: warehouse
+                        prefix: TIT
+                        company_name: Titanium
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '14140-000 '
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 132
+                      -
+                        id: 8
+                        legacy_id: 11
+                        user_id: 1
+                        type: warehouse
+                        prefix: DRO
+                        company_name: 'Drop - SP'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '03694001'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 112
+                      -
+                        id: 18
+                        legacy_id: 403
+                        user_id: 1
+                        type: warehouse
+                        prefix: VIA
+                        company_name: 'Via/Nutri Suplementos'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 88136-220
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 54
+                      -
+                        id: 32
+                        legacy_id: 503
+                        user_id: 1
+                        type: warehouse
+                        prefix: SAL
+                        company_name: SALES
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '03471130'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 45
+                      -
+                        id: 14
+                        legacy_id: 54
+                        user_id: 1
+                        type: warehouse
+                        prefix: INF
+                        company_name: 'Infinity Drop '
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '06144200'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 35
+                      -
+                        id: 16
+                        legacy_id: 66
+                        user_id: 1
+                        type: warehouse
+                        prefix: RED
+                        company_name: 'REDAGRO COMERCIO '
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 37842-899
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 11
+                      -
+                        id: 28
+                        legacy_id: 485
+                        user_id: 1
+                        type: warehouse
+                        prefix: THI
+                        company_name: 'thiago teste'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 200500-08
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 1
+                      -
+                        id: 2
+                        legacy_id: null
+                        user_id: 1
+                        type: warehouse
+                        prefix: PLUGLAR
+                        company_name: PlugLar
+                        display_name: PlugLar
+                        theme_color: null
+                        document: '00000000000000'
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: null
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-04-24T03:50:26.000000Z'
+                        updated_at: '2026-04-24T03:50:26.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 0
+                      -
+                        id: 26
+                        legacy_id: 454
+                        user_id: 1
+                        type: warehouse
+                        prefix: TES
+                        company_name: Teste
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: 40000-000
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 0
+                      -
+                        id: 31
+                        legacy_id: 500
+                        user_id: 1
+                        type: warehouse
+                        prefix: LOG
+                        company_name: 'LogiDrop SP'
+                        display_name: null
+                        theme_color: null
+                        document: ''
+                        phone: null
+                        logo: null
+                        description: null
+                        address: null
+                        city: null
+                        state: null
+                        zipcode: '07094000'
+                        is_active: 1
+                        allows_direct_payment: 0
+                        pix_fee: '0.00'
+                        is_factory: 0
+                        supports_meli_flex: 0
+                        flex_fee: '0.00'
+                        allows_direct_deposit: 1
+                        created_at: '2026-05-13T17:04:57.000000Z'
+                        updated_at: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id: null
+                        is_private: 0
+                        products_count: 0
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 10
+                        legacy_id:
+                          type: integer
+                          example: 20
+                        user_id:
+                          type: integer
+                          example: 1
+                        type:
+                          type: string
+                          example: warehouse
+                        prefix:
+                          type: string
+                          example: DRO
+                        company_name:
+                          type: string
+                          example: 'Drop Auto Peças - SP'
+                        display_name:
+                          type: string
+                          example: null
+                          nullable: true
+                        theme_color:
+                          type: string
+                          example: null
+                          nullable: true
+                        document:
+                          type: string
+                          example: ''
+                        phone:
+                          type: string
+                          example: null
+                          nullable: true
+                        logo:
+                          type: string
+                          example: null
+                          nullable: true
+                        description:
+                          type: string
+                          example: null
+                          nullable: true
+                        address:
+                          type: string
+                          example: null
+                          nullable: true
+                        city:
+                          type: string
+                          example: null
+                          nullable: true
+                        state:
+                          type: string
+                          example: null
+                          nullable: true
+                        zipcode:
+                          type: string
+                          example: 02082-030
+                        is_active:
+                          type: integer
+                          example: 1
+                        allows_direct_payment:
+                          type: integer
+                          example: 0
+                        pix_fee:
+                          type: string
+                          example: '0.00'
+                        is_factory:
+                          type: integer
+                          example: 0
+                        supports_meli_flex:
+                          type: integer
+                          example: 0
+                        flex_fee:
+                          type: string
+                          example: '0.00'
+                        allows_direct_deposit:
+                          type: integer
+                          example: 1
+                        created_at:
+                          type: string
+                          example: '2026-05-13T17:04:57.000000Z'
+                        updated_at:
+                          type: string
+                          example: '2026-05-13T17:04:57.000000Z'
+                        owner_client_id:
+                          type: string
+                          example: null
+                          nullable: true
+                        is_private:
+                          type: integer
+                          example: 0
+                        products_count:
+                          type: integer
+                          example: 65282
+      tags:
+        - Endpoints
+  '/api/public/catalog/{supplier_id}':
+    get:
+      summary: ''
+      operationId: getApiPublicCatalogSupplier_id
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: supplier_id
+        description: 'The ID of the supplier.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/webhooks/legacy-sync:
+    post:
+      summary: ''
+      operationId: postApiWebhooksLegacySync
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+  /api/webhooks/legacy-stock:
+    post:
+      summary: ''
+      operationId: postApiWebhooksLegacyStock
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+  /api/webhooks/asaas:
+    post:
+      summary: ''
+      operationId: postApiWebhooksAsaas
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+  '/api/webhooks/payment/{supplier_slug}/{gateway}':
+    post:
+      summary: 'Recebe webhooks de pagamento por fornecedor e gateway.'
+      operationId: recebeWebhooksDePagamentoPorFornecedorEGateway
+      description: "Rota: POST /api/webhooks/payment/{supplier_slug}/{gateway}\n\nResponsabilidades:\n 1. Validar supplier e configuracao\n 2. Verificar assinatura HMAC (quando webhook_secret estiver configurado)\n 3. Retornar 200 imediatamente para o gateway\n 4. Despachar processamento assincrono via job"
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: supplier_slug
+        description: 'The slug of the supplier.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: gateway
+        description: ''
+        example: asaas|shipay|pagarme
+        required: true
+        schema:
+          type: string
+  '/api/webhooks/{platform}':
+    post:
+      summary: ''
+      operationId: postApiWebhooksPlatform
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: platform
+        description: ''
+        example: mercadolivre|shopee|amazon|hvxi
+        required: true
+        schema:
+          type: string
+  /api/webhooks/mercadolivre:
+    post:
+      summary: ''
+      operationId: postApiWebhooksMercadolivre
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+  '/api/webhooks/orders/{platform}':
+    post:
+      summary: 'Receives order notifications from Marketplaces'
+      operationId: receivesOrderNotificationsFromMarketplaces
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: platform
+        description: ''
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/admin/clients:
+    get:
+      summary: ''
+      operationId: getApiV1AdminClients
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  '/api/v1/admin/clients/{id}':
+    get:
+      summary: ''
+      operationId: getApiV1AdminClientsId
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+    put:
+      summary: ''
+      operationId: putApiV1AdminClientsId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                document:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: amniihfqcoynlazgh
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: dtqtqxbajwbpilpmu
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+                listing_mode:
+                  type: string
+                  description: ''
+                  example: hybrid
+                  enum:
+                    - dropshipping
+                    - white_label
+                    - hybrid
+                  nullable: true
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the client.'
+        example: consequatur
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/dashboard:
+    get:
+      summary: ''
+      operationId: getApiV1AdminDashboard
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/admin/suppliers:
+    post:
+      summary: ''
+      operationId: postApiV1AdminSuppliers
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                type:
+                  type: string
+                  description: ''
+                  example: warehouse
+                  enum:
+                    - producer
+                    - warehouse
+                document:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: amniihfqcoynlazgh
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: dtqtqxbajwbpilpmu
+                  nullable: true
+                address:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: finllwloauydlsmsjuryv
+                  nullable: true
+                city:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: ojcybzvrbyickznkygloi
+                  nullable: true
+                state:
+                  type: string
+                  description: 'Must not be greater than 2 characters.'
+                  example: gm
+                  nullable: true
+                zipcode:
+                  type: string
+                  description: 'Must not be greater than 10 characters.'
+                  example: kwxphlvaz
+                  nullable: true
+                description:
+                  type: string
+                  description: ''
+                  example: 'Dolores dolorum amet iste laborum eius est dolor.'
+                  nullable: true
+                pix_fee:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 4
+                  nullable: true
+                allows_direct_payment:
+                  type: boolean
+                  description: ''
+                  example: true
+                  nullable: true
+                is_factory:
+                  type: boolean
+                  description: ''
+                  example: true
+                  nullable: true
+              required:
+                - company_name
+                - type
+  '/api/v1/admin/suppliers/{id}':
+    put:
+      summary: ''
+      operationId: putApiV1AdminSuppliersId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: vmqeopfuudtdsufvyvddq
+                type:
+                  type: string
+                  description: ''
+                  example: warehouse
+                  enum:
+                    - producer
+                    - warehouse
+                document:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: amniihfqcoynlazgh
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: dtqtqxbajwbpilpmu
+                  nullable: true
+                address:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: finllwloauydlsmsjuryv
+                  nullable: true
+                city:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: ojcybzvrbyickznkygloi
+                  nullable: true
+                state:
+                  type: string
+                  description: 'Must not be greater than 2 characters.'
+                  example: gm
+                  nullable: true
+                zipcode:
+                  type: string
+                  description: 'Must not be greater than 10 characters.'
+                  example: kwxphlvaz
+                  nullable: true
+                description:
+                  type: string
+                  description: ''
+                  example: 'Dolores dolorum amet iste laborum eius est dolor.'
+                  nullable: true
+                pix_fee:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 4
+                  nullable: true
+                allows_direct_payment:
+                  type: boolean
+                  description: ''
+                  example: true
+                is_factory:
+                  type: boolean
+                  description: ''
+                  example: false
+    delete:
+      summary: ''
+      operationId: deleteApiV1AdminSuppliersId
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the supplier.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/admin/sync-status:
+    get:
+      summary: ''
+      operationId: getApiV1AdminSyncStatus
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+  /api/v1/admin/sync/force:
+    post:
+      summary: ''
+      operationId: postApiV1AdminSyncForce
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints
+  /api/simulator/webhook-order:
+    post:
+      summary: ''
+      operationId: postApiSimulatorWebhookOrder
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Endpoints

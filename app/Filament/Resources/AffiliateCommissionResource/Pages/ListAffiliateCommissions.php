@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Filament\Resources\AffiliateCommissionResource\Pages;
+
+use App\Filament\Resources\AffiliateCommissionResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+
+class ListAffiliateCommissions extends ListRecords
+{
+    protected static string $resource = AffiliateCommissionResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\CreateAction::make()->label('Nova Comissao'),
+        ];
+    }
+}

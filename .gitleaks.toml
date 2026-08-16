@@ -1,0 +1,34 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "php-db-password"
+description = "PHP hardcoded DB password"
+regex = '''(?i)\$password\s*=\s*['"]([^'"]{8,})['"]'''
+tags = ["PHP", "database"]
+
+[[rules]]
+id = "ovpn-private-key"
+description = "OpenVPN inline private key"
+regex = '''-----BEGIN (EC |RSA |OPENSSH |)PRIVATE KEY-----'''
+tags = ["openvpn", "key", "secret"]
+
+[[rules]]
+id = "dockerfile-chpasswd"
+description = "Hardcoded password via chpasswd in Dockerfile"
+regex = '''echo\s+['"]root:[^'"]+['"]\s*\|\s*chpasswd'''
+tags = ["dockerfile", "password"]
+
+[[rules]]
+id = "permit-root-login-yes"
+description = "SSH PermitRootLogin yes in Dockerfile or config"
+regex = '''PermitRootLogin\s+yes'''
+tags = ["ssh", "dockerfile"]
+
+[allowlist]
+paths = [
+  '''vendor/''',
+  '''node_modules/''',
+  '''\.git/''',
+  '''\.gitleaks\.toml''',
+]

@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('marketplace_accounts', function (Blueprint $table) {
+            if (!Schema::hasColumn('marketplace_accounts', 'refresh_errors_count')) {
+                $table->unsignedInteger('refresh_errors_count')->default(0)->after('sync_errors_count');
+            }
+            if (!Schema::hasColumn('marketplace_accounts', 'last_error_message')) {
+                $table->string('last_error_message', 255)->nullable()->after('refresh_errors_count');
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('marketplace_accounts', function (Blueprint $table) {
+            if (Schema::hasColumn('marketplace_accounts', 'refresh_errors_count')) {
+                $table->dropColumn('refresh_errors_count');
+            }
+            if (Schema::hasColumn('marketplace_accounts', 'last_error_message')) {
+                $table->dropColumn('last_error_message');
+            }
+        });
+    }
+};

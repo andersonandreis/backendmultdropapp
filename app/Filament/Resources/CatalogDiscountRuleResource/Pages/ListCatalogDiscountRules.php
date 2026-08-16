@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Filament\Resources\CatalogDiscountRuleResource\Pages;
+
+use App\Filament\Resources\CatalogDiscountRuleResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+
+class ListCatalogDiscountRules extends ListRecords
+{
+    protected static string $resource = CatalogDiscountRuleResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\CreateAction::make(),
+        ];
+    }
+}

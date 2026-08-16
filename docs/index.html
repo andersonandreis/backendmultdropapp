@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>HubAI - Documentação Oficial (Wiki)</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="Manual completo e navegável do sistema HubAI">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <!-- Tema Visual Estilo Vue/WordPress -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+    <style>
+        :root {
+            --theme-color: #f59e0b;
+            /* Cor primária do HubAI (Amber) */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">Carregando a documentação da HubAI...</div>
+
+    <script>
+        window.$docsify = {
+            name: 'HubAI Docs',
+            repo: '',
+            loadSidebar: true,
+            subMaxLevel: 2,
+            auto2top: true,
+            search: {
+                maxAge: 86400000,
+                paths: 'auto',
+                placeholder: 'Pesquisar...',
+                noData: 'Nenhum resultado encontrado!',
+                depth: 3
+            }
+        }
+    </script>
+
+    <!-- Núcleo do Docsify -->
+    <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+
+    <!-- Plugins: Pesquisa e Zoom nas Imagens -->
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+</body>
+
+</html>

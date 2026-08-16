@@ -1,0 +1,3171 @@
+{
+    "variable": [
+        {
+            "id": "baseUrl",
+            "key": "baseUrl",
+            "type": "string",
+            "name": "string",
+            "value": "https:\/\/api.hubai.io"
+        }
+    ],
+    "info": {
+        "name": "HubAI Platform API",
+        "_postman_id": "64772bfa-615e-402f-96ed-90090acc7c33",
+        "description": "REST API for the HubAI dropshipping platform. Used by the Lovable frontend (hubai.io).",
+        "schema": "https:\/\/schema.getpostman.com\/json\/collection\/v2.1.0\/collection.json"
+    },
+    "item": [
+        {
+            "name": "Endpoints",
+            "description": "",
+            "item": [
+                {
+                    "name": "Handles the API request and renders the Swagger documentation view.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/documentation",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/documentation"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <title>HubAI API<\/title>\n    <link rel=\"stylesheet\" type=\"text\/css\" href=\"https:\/\/api.hubai.io\/api\/swagger-json\/asset\/swagger-ui.css?v=66b916fbe27b7383f8c1094afbb52976\">\n    <link rel=\"icon\" type=\"image\/png\" href=\"https:\/\/api.hubai.io\/api\/swagger-json\/asset\/favicon-32x32.png?v=40d4f2c38d1cd854ad463f16373cbcb6\" sizes=\"32x32\"\/>\n    <link rel=\"icon\" type=\"image\/png\" href=\"https:\/\/api.hubai.io\/api\/swagger-json\/asset\/favicon-16x16.png?v=f0ae831196d55d8f4115b6c5e8ec5384\" sizes=\"16x16\"\/>\n    <style>\n    html\n    {\n        box-sizing: border-box;\n        overflow: -moz-scrollbars-vertical;\n        overflow-y: scroll;\n    }\n    *,\n    *:before,\n    *:after\n    {\n        box-sizing: inherit;\n    }\n\n    body {\n      margin:0;\n      background: #fafafa;\n    }\n    <\/style>\n    <\/head>\n\n<body >\n<div id=\"swagger-ui\"><\/div>\n\n<script src=\"https:\/\/api.hubai.io\/api\/swagger-json\/asset\/swagger-ui-bundle.js?v=45ccffa901bb9a18069b6c20d3363413\"><\/script>\n<script src=\"https:\/\/api.hubai.io\/api\/swagger-json\/asset\/swagger-ui-standalone-preset.js?v=7289ecfaa5507c519cb95606e6216dbb\"><\/script>\n<script>\n    window.onload = function() {\n        const urls = [];\n\n                    urls.push({name: \"HubAI API\", url: \"https:\/\/api.hubai.io\/api\/swagger-json?api-docs.json\"});\n        \n        \/\/ Build a system\n        const ui = SwaggerUIBundle({\n            dom_id: '#swagger-ui',\n            urls: urls,\n            \"urls.primaryName\": \"HubAI API\",\n            operationsSorter: null,\n            configUrl: null,\n            validatorUrl: null,\n            oauth2RedirectUrl: \"https:\/\/api.hubai.io\/api\/oauth2-callback\",\n\n            requestInterceptor: function(request) {\n                request.headers['X-CSRF-TOKEN'] = '';\n                return request;\n            },\n\n            presets: [\n                SwaggerUIBundle.presets.apis,\n                SwaggerUIStandalonePreset\n            ],\n\n            plugins: [\n                SwaggerUIBundle.plugins.DownloadUrl\n            ],\n\n            layout: \"StandaloneLayout\",\n            docExpansion : \"none\",\n            deepLinking: true,\n            filter: true,\n            persistAuthorization: \"false\",\n\n        })\n\n        window.ui = ui\n\n            }\n<\/script>\n<\/body>\n<\/html>\n",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Handles requests for API documentation and returns the corresponding file content.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/swagger-json",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/swagger-json"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 404,
+                            "body": "{\n    \"message\": \"Unable to locate documentation file at: \\\"\/home\/api.hubai.io\/public_html\/storage\/api-docs\/api-docs.json\\\"\"\n}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Serves a specific documentation asset for the Swagger UI interface.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/swagger-json\/asset\/:asset",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/swagger-json\/asset\/:asset",
+                            "variable": [
+                                {
+                                    "id": "asset",
+                                    "key": "asset",
+                                    "value": "consequatur",
+                                    "description": "The asset."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 404,
+                            "body": "{\n    \"message\": \"(consequatur) - this L5 Swagger asset is not allowed\"\n}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Handles the OAuth2 callback and retrieves the required file for the redirect.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/oauth2-callback",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/oauth2-callback"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "content-type",
+                                    "value": "text\/html; charset=utf-8"
+                                },
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "<!doctype html>\n<html lang=\"en-US\">\n<body>\n<script src=\"oauth2-redirect.js\"><\/script>\n<\/body>\n<\/html>\n",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/health",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/health",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/health"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "{\"status\":\"HubAI API is up and running\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/login",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/login",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/login"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"email\":\"qkunze@example.com\",\"password\":\"O[2UZ5ij-e\\\/dl4m{o,\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/logout",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/logout",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/logout"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/me",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/me",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/me"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/stores",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/stores",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/stores"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/stores",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/stores",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/stores"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"supplier_id\":17,\"platform\":\"hubaisimulator\",\"account_name\":\"mqeopfuudtdsufvyvddqa\",\"pricing_strategy\":\"competitive\",\"price_margin\":13,\"tax_percentage\":13,\"marketplace_commission\":28}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/stores\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/stores\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/stores\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the store."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT api\/v1\/stores\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/stores\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/stores\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the store."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"account_name\":\"vmqeopfuudtdsufvyvddq\",\"pricing_strategy\":\"competitive\",\"price_margin\":1,\"tax_percentage\":13,\"marketplace_commission\":46,\"marketplace_fixed_fee\":28,\"marketplace_shipping_fee\":30,\"status\":\"pending\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/suppliers",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/suppliers",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/suppliers"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/suppliers\/{id}\/catalog",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/suppliers\/:id\/catalog",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/suppliers\/:id\/catalog",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the supplier."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/products\/batch-publish",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/batch-publish",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/batch-publish"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"product_ids\":[17]}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/products",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/products",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"product_id\":17,\"product_variation_id\":17,\"marketplace_account_id\":17,\"custom_sku\":\"mqeopfuudtdsufvyvddqa\",\"custom_title\":\"mniihfqcoynlazghdtqtq\",\"custom_description\":\"consequatur\",\"custom_price\":45,\"pricing_mode\":\"margin\",\"profit_margin\":16,\"is_active\":true}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/products\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT api\/v1\/products\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"custom_title\":\"vmqeopfuudtdsufvyvddq\",\"custom_description\":\"consequatur\",\"custom_price\":45,\"pricing_mode\":\"margin\",\"profit_margin\":16,\"is_active\":true,\"custom_weight_kg\":16,\"custom_height_cm\":50,\"custom_width_cm\":55,\"custom_length_cm\":19}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE api\/v1\/products\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/v1\/products\/{id}\/images",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/images",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/images",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart\/form-data"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "is_cover",
+                                    "value": "1",
+                                    "type": "text",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "position",
+                                    "value": "73",
+                                    "type": "text",
+                                    "description": "Must be at least 0."
+                                },
+                                {
+                                    "key": "image",
+                                    "src": [],
+                                    "type": "file"
+                                }
+                            ]
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE api\/v1\/products\/{id}\/images\/{imageId}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/images\/:imageId",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/images\/:imageId",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                },
+                                {
+                                    "id": "imageId",
+                                    "key": "imageId",
+                                    "value": "consequatur",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT api\/v1\/products\/{id}\/images\/reorder",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/images\/reorder",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/images\/reorder",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"order\":[{\"id\":17,\"position\":45}]}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/v1\/products\/{id}\/video",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/video",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/video",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"video_url\":\"http:\\\/\\\/kunze.biz\\\/iste-laborum-eius-est-dolor.html\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE api\/v1\/products\/{id}\/video",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/video",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/video",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/products\/{id}\/variations",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/variations",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/variations",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/products\/{id}\/variations",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/variations",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/variations",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"sku\":\"vmqeopfuudtdsufvyvddq\",\"name\":\"amniihfqcoynlazghdtqt\",\"price\":56,\"cost\":80,\"gtin\":\"bajwbpilpmuf\",\"position\":28,\"is_active\":true}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT api\/v1\/products\/{id}\/variations\/{vid}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/variations\/:vid",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/variations\/:vid",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                },
+                                {
+                                    "id": "vid",
+                                    "key": "vid",
+                                    "value": "consequatur",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"vmqeopfuudtdsufvyvddq\",\"price\":1,\"cost\":45,\"gtin\":\"niihfqcoynla\",\"position\":89,\"is_active\":false}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE api\/v1\/products\/{id}\/variations\/{vid}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/products\/:id\/variations\/:vid",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/products\/:id\/variations\/:vid",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                },
+                                {
+                                    "id": "vid",
+                                    "key": "vid",
+                                    "value": "consequatur",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/orders",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/orders",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/orders"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/orders\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/orders\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/orders\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the order."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/financial\/balance",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/financial\/balance",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/financial\/balance"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/financial\/transactions",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/financial\/transactions",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/financial\/transactions"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/profile",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/profile",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/profile"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT api\/v1\/profile",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/profile",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/profile"
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"company_name\":\"vmqeopfuudtdsufvyvddq\",\"document\":\"amniihfqcoynlaz\",\"phone\":\"ghdtqtqxbajwbpilp\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT api\/v1\/password",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/password",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/password"
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"current_password\":\"consequatur\",\"new_password\":\"mqeopfuudtdsufvyvddqamniihfqcoynlazghdtqtqxbajwbpilpmufinllwloauydlsmsjuryv\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/plans",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/plans",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/plans"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/subscription",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/subscription",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/subscription"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/orders\/{id}\/label",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/orders\/:id\/label",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/orders\/:id\/label",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the order."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/v1\/orders\/{id}\/invoice",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/orders\/:id\/invoice",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/orders\/:id\/invoice",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the order."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"invoice_number\":\"vmqeopfuudtdsufvy\",\"invoice_series\":\"vddqamnii\",\"invoice_access_key\":\"hfqcoynlazghdtqtqxbajwbpilpmufinllwloauydlsm\",\"invoice_url\":\"http:\\\/\\\/hirthe.info\\\/molestiae-vel-natus-ex-dicta-hic-inventore\",\"invoice_xml_url\":\"https:\\\/\\\/schuppe.biz\\\/non-quia-dicta-in.html\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/v1\/orders\/{id}\/ship",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/orders\/:id\/ship",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/orders\/:id\/ship",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the order."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"tracking_number\":\"vmqeopfuudtdsufvyvddq\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/supplier\/products",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/supplier\/products",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/supplier\/products"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/supplier\/products",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/supplier\/products",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/supplier\/products"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"vmqeopfuudtdsufvyvddq\",\"sku\":\"amniihfqcoynlazghdtqt\",\"cost\":56,\"price\":80,\"description\":\"Dolores dolorum amet iste laborum eius est dolor.\",\"ean\":\"dtdsufvyvddqamnii\",\"brand\":\"hfqcoynlazghdtqtqxbaj\",\"weight_kg\":79,\"height_cm\":5,\"width_cm\":54,\"length_cm\":31,\"video_url\":\"https:\\\/\\\/www.moen.com\\\/quia-ipsam-ut-iusto-iusto-accusamus-iusto-similique\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT api\/v1\/supplier\/products\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/supplier\/products\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/supplier\/products\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"vmqeopfuudtdsufvyvddq\",\"cost\":1,\"price\":45,\"description\":\"Dolores dolorum amet iste laborum eius est dolor.\",\"is_active\":false,\"ean\":\"dtdsufvyvddqamnii\",\"brand\":\"hfqcoynlazghdtqtqxbaj\",\"weight_kg\":79,\"height_cm\":5,\"width_cm\":54,\"length_cm\":31,\"video_url\":\"https:\\\/\\\/www.moen.com\\\/quia-ipsam-ut-iusto-iusto-accusamus-iusto-similique\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT api\/v1\/supplier\/products\/{id}\/stock",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/supplier\/products\/:id\/stock",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/supplier\/products\/:id\/stock",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the product."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"quantity\":73}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/supplier\/orders",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/supplier\/orders",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/supplier\/orders"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/supplier\/dashboard",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/supplier\/dashboard",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/supplier\/dashboard"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/webhook-configs",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/webhook-configs",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/webhook-configs"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/webhook-configs",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/webhook-configs",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/webhook-configs"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"vmqeopfuudtdsufvyvddq\",\"security_header\":\"amniihfqcoynlazghdtqt\",\"event_field\":\"qxbajwbpilpmufinllwlo\",\"expected_event_value\":\"auydlsmsjuryvojcybzvr\",\"customer_email_field\":\"byickznkygloigmkwxphl\",\"amount_field\":\"vazjrcnfbaqywuxhgjjmz\",\"subscription_id_field\":\"uxjubqouzswiwxtrkimfc\",\"is_active\":true}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT api\/v1\/webhook-configs\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/webhook-configs\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/webhook-configs\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the webhook config."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"security_header\":\"vmqeopfuudtdsufvyvddq\",\"event_field\":\"amniihfqcoynlazghdtqt\",\"expected_event_value\":\"qxbajwbpilpmufinllwlo\",\"customer_email_field\":\"auydlsmsjuryvojcybzvr\",\"amount_field\":\"byickznkygloigmkwxphl\",\"subscription_id_field\":\"vazjrcnfbaqywuxhgjjmz\",\"is_active\":true}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE api\/v1\/webhook-configs\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/webhook-configs\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/webhook-configs\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the webhook config."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/event-subscriptions",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/event-subscriptions",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/event-subscriptions"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/event-subscriptions",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/event-subscriptions",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/event-subscriptions"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"event_type\":\"vmqeopfuudtdsufvyvddq\",\"channels\":[\"webhook\"],\"webhook_url\":\"http:\\\/\\\/www.kunde.com\\\/\",\"webhook_secret\":\"iihfqcoynlazghdtqtqxb\",\"supplier_id\":17,\"is_active\":false}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/marketplace\/connect\/{platform}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/marketplace\/connect\/:platform",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/marketplace\/connect\/:platform",
+                            "variable": [
+                                {
+                                    "id": "platform",
+                                    "key": "platform",
+                                    "value": "consequatur",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/marketplace\/status",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/marketplace\/status",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/marketplace\/status"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/marketplace\/{platform}\/publish",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/marketplace\/:platform\/publish",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/marketplace\/:platform\/publish",
+                            "variable": [
+                                {
+                                    "id": "platform",
+                                    "key": "platform",
+                                    "value": "consequatur",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"product_id\":17,\"title\":\"mqeopfuudtdsufvyvddqa\",\"price\":45,\"category_id\":\"niihfqcoynlazghdtqtqx\",\"integrations\":[17]}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Webhook receptor de perguntas do Mercado Livre.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/webhooks\/mercadolivre\/questions",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/webhooks\/mercadolivre\/questions"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "DESATIVADO: endpoint mockado, sem integracao real com OpenAI.\nMantido para nao quebrar a rota configurada no ML."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/v1\/webhooks\/pagamentos\/{slug}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/webhooks\/pagamentos\/:slug",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/webhooks\/pagamentos\/:slug",
+                            "variable": [
+                                {
+                                    "id": "slug",
+                                    "key": "slug",
+                                    "value": "consequatur",
+                                    "description": "The slug of the pagamento."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Inicia o fluxo OAuth. Aceita client_id e supplier_id como query params\npara permitir que o frontend (hubai.io) inicie o fluxo sem Sanctum auth.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/oauth\/:platform\/redirect",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/oauth\/:platform\/redirect",
+                            "variable": [
+                                {
+                                    "id": "platform",
+                                    "key": "platform",
+                                    "value": "consequatur",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 422,
+                            "body": "{\"error\":\"client_id obrigat\\u00f3rio\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Callback OAuth. Troca code por tokens REAIS e salva MarketplaceAccount.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/oauth\/:platform\/callback",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/oauth\/:platform\/callback",
+                            "variable": [
+                                {
+                                    "id": "platform",
+                                    "key": "platform",
+                                    "value": "consequatur",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "location",
+                                    "value": "https:\/\/hubai.io\/painel-cliente\/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "text\/html; charset=utf-8"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 302,
+                            "body": "<!DOCTYPE html>\n<html>\n    <head>\n        <meta charset=\"UTF-8\" \/>\n        <meta http-equiv=\"refresh\" content=\"0;url='https:\/\/hubai.io\/painel-cliente\/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o'\" \/>\n\n        <title>Redirecting to https:\/\/hubai.io\/painel-cliente\/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o<\/title>\n    <\/head>\n    <body>\n        Redirecting to <a href=\"https:\/\/hubai.io\/painel-cliente\/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o\">https:\/\/hubai.io\/painel-cliente\/integracoes?error=State+ausente+na+resposta+de+autoriza%C3%A7%C3%A3o<\/a>.\n    <\/body>\n<\/html>",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/public\/marketplace-accounts",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/public\/marketplace-accounts",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/public\/marketplace-accounts"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 422,
+                            "body": "{\"error\":\"client_id required\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/public\/suppliers",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/public\/suppliers",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/public\/suppliers"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 200,
+                            "body": "{\"data\":[{\"id\":10,\"legacy_id\":20,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"DRO\",\"company_name\":\"Drop Auto Pe\\u00e7as - SP\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"02082-030\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":65282},{\"id\":11,\"legacy_id\":25,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"ENV\",\"company_name\":\"Envio Nacional\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"20060070\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":3168},{\"id\":9,\"legacy_id\":13,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"ENV\",\"company_name\":\"Envio Nacional - RJ\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"20060070\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":3108},{\"id\":7,\"legacy_id\":61,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"PLU\",\"company_name\":\"Plug Lar\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"13500240\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T16:58:44.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":2247},{\"id\":1,\"legacy_id\":null,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"DROPRIO\",\"company_name\":\"DropRio\",\"display_name\":\"DropRio\",\"theme_color\":null,\"document\":\"00000000000000\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":null,\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-04-24T02:47:53.000000Z\",\"updated_at\":\"2026-04-24T02:47:53.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":2186},{\"id\":22,\"legacy_id\":432,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"DRO\",\"company_name\":\"Drop2you RJ 1\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"20041005\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":1635},{\"id\":19,\"legacy_id\":410,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"CLI\",\"company_name\":\"Clique RJ\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"20070-022\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":1559},{\"id\":17,\"legacy_id\":373,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"UPD\",\"company_name\":\"UPDROP - GALPAO SP DROP\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"03891-000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":1016},{\"id\":25,\"legacy_id\":447,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"MES\",\"company_name\":\"M&E store atacado e drop\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"24800025\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":984},{\"id\":12,\"legacy_id\":27,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"MIX\",\"company_name\":\"Mix Variedades - SP\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"04679-000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":886},{\"id\":27,\"legacy_id\":465,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"PEG\",\"company_name\":\"Peg Comercial Revenda\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"81650060\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":582},{\"id\":13,\"legacy_id\":53,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"JTD\",\"company_name\":\"JTDrop\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"200500-08\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":561},{\"id\":33,\"legacy_id\":600,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"UNI\",\"company_name\":\"UnicDrop\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"05077000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:58.000000Z\",\"updated_at\":\"2026-05-13T17:04:58.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":397},{\"id\":29,\"legacy_id\":488,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"ATR\",\"company_name\":\"atravessadorpro\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"09725560\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":342},{\"id\":30,\"legacy_id\":498,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"MUL\",\"company_name\":\"Multdrop\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"72.701-997\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":339},{\"id\":34,\"legacy_id\":608,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"LET\",\"company_name\":\"Letielly Shore\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"35603000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:58.000000Z\",\"updated_at\":\"2026-05-13T17:04:58.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":239},{\"id\":24,\"legacy_id\":446,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"GAL\",\"company_name\":\"Galp\\u00e3o 23 SP\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"06365000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":194},{\"id\":23,\"legacy_id\":437,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"DRO\",\"company_name\":\"Drop2you SP 1\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"02186000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":171},{\"id\":20,\"legacy_id\":426,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"SMA\",\"company_name\":\"Smart Tech\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"04009-003\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":139},{\"id\":21,\"legacy_id\":430,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"BRS\",\"company_name\":\"Br\\u00e1s Mania Drop\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"13306-123\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":139},{\"id\":15,\"legacy_id\":58,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"TIT\",\"company_name\":\"Titanium\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"14140-000 \",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":132},{\"id\":8,\"legacy_id\":11,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"DRO\",\"company_name\":\"Drop - SP\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"03694001\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":112},{\"id\":18,\"legacy_id\":403,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"VIA\",\"company_name\":\"Via\\\/Nutri Suplementos\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"88136-220\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":54},{\"id\":32,\"legacy_id\":503,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"SAL\",\"company_name\":\"SALES\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"03471130\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":45},{\"id\":14,\"legacy_id\":54,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"INF\",\"company_name\":\"Infinity Drop \",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"06144200\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":35},{\"id\":16,\"legacy_id\":66,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"RED\",\"company_name\":\"REDAGRO COMERCIO \",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"37842-899\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":11},{\"id\":28,\"legacy_id\":485,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"THI\",\"company_name\":\"thiago teste\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"200500-08\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":1},{\"id\":2,\"legacy_id\":null,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"PLUGLAR\",\"company_name\":\"PlugLar\",\"display_name\":\"PlugLar\",\"theme_color\":null,\"document\":\"00000000000000\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":null,\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-04-24T03:50:26.000000Z\",\"updated_at\":\"2026-04-24T03:50:26.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":0},{\"id\":26,\"legacy_id\":454,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"TES\",\"company_name\":\"Teste\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"40000-000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":0},{\"id\":31,\"legacy_id\":500,\"user_id\":1,\"type\":\"warehouse\",\"prefix\":\"LOG\",\"company_name\":\"LogiDrop SP\",\"display_name\":null,\"theme_color\":null,\"document\":\"\",\"phone\":null,\"logo\":null,\"description\":null,\"address\":null,\"city\":null,\"state\":null,\"zipcode\":\"07094000\",\"is_active\":1,\"allows_direct_payment\":0,\"pix_fee\":\"0.00\",\"is_factory\":0,\"supports_meli_flex\":0,\"flex_fee\":\"0.00\",\"allows_direct_deposit\":1,\"created_at\":\"2026-05-13T17:04:57.000000Z\",\"updated_at\":\"2026-05-13T17:04:57.000000Z\",\"owner_client_id\":null,\"is_private\":0,\"products_count\":0}]}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/public\/catalog\/{supplier_id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/public\/catalog\/:supplier_id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/public\/catalog\/:supplier_id",
+                            "variable": [
+                                {
+                                    "id": "supplier_id",
+                                    "key": "supplier_id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the supplier."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 500,
+                            "body": "{\n    \"message\": \"Server Error\"\n}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/webhooks\/legacy-sync",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/webhooks\/legacy-sync",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/webhooks\/legacy-sync"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/webhooks\/legacy-stock",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/webhooks\/legacy-stock",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/webhooks\/legacy-stock"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/webhooks\/asaas",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/webhooks\/asaas",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/webhooks\/asaas"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Recebe webhooks de pagamento por fornecedor e gateway.",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/webhooks\/payment\/:supplier_slug\/:gateway",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/webhooks\/payment\/:supplier_slug\/:gateway",
+                            "variable": [
+                                {
+                                    "id": "supplier_slug",
+                                    "key": "supplier_slug",
+                                    "value": "consequatur",
+                                    "description": "The slug of the supplier."
+                                },
+                                {
+                                    "id": "gateway",
+                                    "key": "gateway",
+                                    "value": "asaas%7Cshipay%7Cpagarme",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Rota: POST \/api\/webhooks\/payment\/{supplier_slug}\/{gateway}\n\nResponsabilidades:\n 1. Validar supplier e configuracao\n 2. Verificar assinatura HMAC (quando webhook_secret estiver configurado)\n 3. Retornar 200 imediatamente para o gateway\n 4. Despachar processamento assincrono via job"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/webhooks\/{platform}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/webhooks\/:platform",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/webhooks\/:platform",
+                            "variable": [
+                                {
+                                    "id": "platform",
+                                    "key": "platform",
+                                    "value": "mercadolivre%7Cshopee%7Camazon%7Chvxi",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/webhooks\/mercadolivre",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/webhooks\/mercadolivre",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/webhooks\/mercadolivre"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Receives order notifications from Marketplaces",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/webhooks\/orders\/:platform",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/webhooks\/orders\/:platform",
+                            "variable": [
+                                {
+                                    "id": "platform",
+                                    "key": "platform",
+                                    "value": "1",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/admin\/clients",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/clients",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/clients"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "GET api\/v1\/admin\/clients\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/clients\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/clients\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the client."
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT api\/v1\/admin\/clients\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/clients\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/clients\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "consequatur",
+                                    "description": "The ID of the client."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"company_name\":\"vmqeopfuudtdsufvyvddq\",\"document\":\"amniihfqcoynlazgh\",\"phone\":\"dtqtqxbajwbpilpmu\",\"is_active\":true,\"listing_mode\":\"hybrid\"}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/admin\/dashboard",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/dashboard",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/dashboard"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/admin\/suppliers",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/suppliers",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/suppliers"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"company_name\":\"vmqeopfuudtdsufvyvddq\",\"type\":\"warehouse\",\"document\":\"amniihfqcoynlazgh\",\"phone\":\"dtqtqxbajwbpilpmu\",\"address\":\"finllwloauydlsmsjuryv\",\"city\":\"ojcybzvrbyickznkygloi\",\"state\":\"gm\",\"zipcode\":\"kwxphlvaz\",\"description\":\"Dolores dolorum amet iste laborum eius est dolor.\",\"pix_fee\":4,\"allows_direct_payment\":true,\"is_factory\":true}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT api\/v1\/admin\/suppliers\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/suppliers\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/suppliers\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the supplier."
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"company_name\":\"vmqeopfuudtdsufvyvddq\",\"type\":\"warehouse\",\"document\":\"amniihfqcoynlazgh\",\"phone\":\"dtqtqxbajwbpilpmu\",\"address\":\"finllwloauydlsmsjuryv\",\"city\":\"ojcybzvrbyickznkygloi\",\"state\":\"gm\",\"zipcode\":\"kwxphlvaz\",\"description\":\"Dolores dolorum amet iste laborum eius est dolor.\",\"pix_fee\":4,\"allows_direct_payment\":true,\"is_factory\":false}"
+                        },
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE api\/v1\/admin\/suppliers\/{id}",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/suppliers\/:id",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/suppliers\/:id",
+                            "variable": [
+                                {
+                                    "id": "id",
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "The ID of the supplier."
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET api\/v1\/admin\/sync-status",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/sync-status",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/sync-status"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "vary",
+                                    "value": "Origin"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "POST api\/v1\/admin\/sync\/force",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/admin\/sync\/force",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/admin\/sync\/force"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST api\/simulator\/webhook-order",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/simulator\/webhook-order",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/simulator\/webhook-order"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": ""
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "Authorization",
+                "type": "string"
+            }
+        ]
+    }
+}

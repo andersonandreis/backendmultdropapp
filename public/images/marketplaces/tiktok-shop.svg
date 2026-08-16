@@ -1,0 +1,18 @@
+<svg width="400" height="120" viewBox="140 60 220 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tiktokGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00F2EA;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FF0050;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(200, 100)">
+    <!-- Music note icon -->
+    <circle cx="-35" cy="10" r="8" fill="url(#tiktokGradient)"/>
+    <rect x="-33" y="-15" width="4" height="25" fill="url(#tiktokGradient)"/>
+    <path d="M -29 -15 Q -15 -20 -10 -10" stroke="url(#tiktokGradient)" stroke-width="4" fill="none"/>
+    <!-- Text -->
+    <text x="-10" y="-5" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#000000">TikTok</text>
+    <text x="-10" y="25" font-family="Arial, sans-serif" font-size="28" font-weight="600" fill="#000000">Shop</text>
+  </g>
+</svg>

@@ -1501,7 +1501,14 @@ class SupplierAdminPanelController extends Controller
             'channel_name'      => $o->channel_name ?: $o->source,
             'store_name'        => $o->store_name_join ?? null,
             'seller_name'       => $o->seller_name_join ?? null,
-            'canonical_status'  => $o->order_processing_status,
+            // MUL-378: o painel do fornecedor traduz este campo por um mapa proprio, e o
+            // vocabulario dele nao tem 'awaiting_dispatch' — cairia no fallback e a tela
+            // mostraria "awaiting dispatch" em ingles cru. 'awaiting_shipment' existe la
+            // como "Aguardando Envio", que e exatamente o estado: etiqueta pronta,
+            // esperando despacho. Quando o front aprender awaiting_dispatch, isto sai.
+            'canonical_status'  => $o->order_processing_status === 'awaiting_dispatch'
+                ? 'awaiting_shipment'
+                : $o->order_processing_status,
             'ean'               => $ean,
         ];
     }

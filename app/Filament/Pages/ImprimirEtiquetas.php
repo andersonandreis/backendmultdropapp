@@ -44,11 +44,15 @@ class ImprimirEtiquetas extends Page
 
         $data = [];
         foreach ($canais as $canal) {
+            // MUL-378: a fila de impressao e "pago + etiqueta + nao enviado, ainda nao
+            // impressa". Antes filtrava so por order_processing_status IN
+            // (awaiting_dispatch, separated) e devolvia 546 linhas: 430 JA ENVIADAS e
+            // 466 canceladas/entregues — etiqueta impressa de pedido que ja foi embora.
+            // E ao mesmo tempo perdia os 75 pedidos travados em 'awaiting_label' que
+            // ja tinham etiqueta baixada. Ambos os casos morrem com o scope.
             $query = Order::query()
-                ->whereNotNull('label_url')
-                ->whereNull('label_printed_at')
-                ->whereNull('blocked_at') // MUL-226-08: pedido bloqueado sai da fila de etiquetas
-                ->whereIn('order_processing_status', ['awaiting_dispatch', 'separated']);
+                ->readyToShip()
+                ->whereNull('label_printed_at');
 
             if ($canal === 'TikTok Shop') {
                 // Cai qualquer fonte fora dos canais conhecidos OU sources reconhecidos como TikTok
@@ -93,11 +97,11 @@ class ImprimirEtiquetas extends Page
         $knownSources = array_merge(...array_values($map));
         $knownSources = array_diff($knownSources, $map['TikTok Shop']);
 
+        // MUL-378: mesma regra do contador (getCanaisData) — o que imprime tem de ser
+        // exatamente o que a tela conta. Ver Order::scopeReadyToShip.
         $query = Order::query()
-            ->whereNotNull('label_url')
-            ->whereNull('label_printed_at')
-            ->whereNull('blocked_at') // MUL-226-08: pedido bloqueado sai da fila de etiquetas
-            ->whereIn('order_processing_status', ['awaiting_dispatch', 'separated']);
+            ->readyToShip()
+            ->whereNull('label_printed_at');
 
         if ($canal === 'TikTok Shop') {
             $query->where(function ($q) use ($map, $knownSources) {

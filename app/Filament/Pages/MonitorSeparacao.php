@@ -23,13 +23,13 @@ class MonitorSeparacao extends Page
         return in_array(auth()->user()?->role, ['super_admin', 'supplier', 'admin']);
     }
 
+    // MUL-378: filtrava `status='paid'` — 12.450 linhas, das quais 12.445 sem etiqueta
+    // e 87 ja enviadas. Agora usa Order::scopeReadyToShip (pago + etiqueta + nao enviado).
     public function getFilaSeparacao()
     {
         return Order::query()
+            ->readyToShip()
             ->with(['client', 'supplier', 'items'])
-            ->where('status', 'paid')
-            ->whereIn('order_processing_status', ['awaiting_label', 'awaiting_dispatch', 'pending', 'separating'])
-            ->whereNotNull('paid_at')
             ->orderBy('paid_at', 'asc')
             ->limit(15)
             ->get();
@@ -37,12 +37,13 @@ class MonitorSeparacao extends Page
 
     public function getStatsAgora(): array
     {
-        $base = Order::query();
         return [
-            'aguardando'    => (clone $base)->where('status', 'paid')->whereIn('order_processing_status', ['awaiting_label','awaiting_dispatch','pending','separating'])->count(),
-            'separados_hoje' => (clone $base)->whereDate('separated_at', today())->count(),
-            'enviados_hoje'  => (clone $base)->whereDate('shipped_at', today())->count(),
-            'atrasados'      => (clone $base)->where('status', 'paid')->whereNotNull('paid_at')->where('paid_at', '<=', now()->subHours(48))->whereNull('shipped_at')->whereNotIn('order_processing_status', ['cancelled','returned','delivered'])->count(),
+            'aguardando'     => Order::query()->readyToShip()->count(),
+            'separados_hoje' => Order::query()->whereDate('separated_at', today())->count(),
+            'enviados_hoje'  => Order::query()->whereDate('shipped_at', today())->count(),
+            // atrasado = trabalho real parado ha mais de 48h desde o pagamento
+            'atrasados'      => Order::query()->readyToShip()
+                ->where('paid_at', '<=', now()->subHours(48))->count(),
         ];
     }
 }

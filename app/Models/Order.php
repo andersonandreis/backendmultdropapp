@@ -310,4 +310,39 @@ class Order extends Model
                 ->where('tenant_id', $uuid);
         });
     }
+
+    /**
+     * MUL-378: definicao UNICA de "pedido pago, com etiqueta, ainda nao enviado" —
+     * o trabalho que existe de verdade no picking/packing.
+     *
+     * Cada tela tinha a sua versao, e todas erravam por filtrar `orders.status`
+     * (status cru do marketplace) em vez das condicoes reais. Medido em 17/08/2026:
+     *   Central de Pedidos ... 12.811 linhas, 12.805 SEM etiqueta
+     *   Monitor de Separacao . 12.450 linhas, 12.445 sem etiqueta, 87 ja enviados
+     *   Imprimir Etiquetas ...    546 linhas,   430 JA ENVIADOS, 466 cancelados/entregues
+     *   verdade ..............    131 pedidos
+     *
+     * Por que cada condicao:
+     *   is_draft=0          rascunho nao e pedido.
+     *   label_url           sem etiqueta o fornecedor nao tem o que despachar.
+     *   shipped_at IS NULL  nao repetir trabalho ja feito.
+     *   paid_at             pago no marketplace (≠ wallet_paid_at, que e o pago AO fornecedor).
+     *   blocked_at IS NULL  MUL-226-08: pedido bloqueado sai da fila.
+     *   canonical_status    'status' cru nao serve: Shopee manda 'processed', e 'paid'
+     *                       cru abriga 12.683 pedidos sem etiqueta. cancelado/entregue
+     *                       ficam de fora porque o marketplace nao aceita mais o envio.
+     *
+     * shipped_at sozinho NAO da conta de "nao enviado": 278 pedidos ja
+     * entregues/enviados estao com shipped_at nulo (importacao antiga nao preencheu).
+     * E por isso que canonical_status entra junto.
+     */
+    public function scopeReadyToShip($q)
+    {
+        return $q->where('orders.is_draft', false)
+            ->whereNotNull('orders.label_url')->where('orders.label_url', '<>', '')
+            ->whereNull('orders.shipped_at')
+            ->whereNotNull('orders.paid_at')
+            ->whereNull('orders.blocked_at')
+            ->whereIn('orders.canonical_status', ['paid', 'processing']);
+    }
 }

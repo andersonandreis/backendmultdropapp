@@ -202,7 +202,17 @@ class ProcessOrders extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(Order::query()->whereIn('status', ['paid', 'preparing'])->orWhere('order_processing_status', 'payment_pending'))
+            // MUL-378: era `whereIn('status',['paid','preparing'])->orWhere(payment_pending)`,
+            // que devolvia 12.811 linhas — 12.805 SEM etiqueta, 101 ja enviadas, 79 entregues.
+            // O `orWhere` solto ainda por cima anulava qualquer outro filtro da query.
+            // Agora: pedido pago, com etiqueta, nao enviado (Order::scopeReadyToShip) +
+            // o ramo payment_pending preservado, mas agrupado.
+            // O ramo `orWhere(order_processing_status,'payment_pending')` saiu: os 21 pedidos
+            // nesse estado sao resíduo de 02-04/07/2026 — nenhum tem etiqueta e no
+            // marketplace todos ja constam shipped/completed (o ops e que ficou parado).
+            // Enquanto o estado nao for corrigido no dado, mostra-los aqui so tira lugar
+            // do trabalho que existe.
+            ->query(Order::query()->readyToShip())
             ->columns([
                 TextColumn::make('order_number')
                     ->label('Nº Pedido')

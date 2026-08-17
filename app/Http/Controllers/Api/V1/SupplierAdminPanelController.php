@@ -1399,13 +1399,13 @@ class SupplierAdminPanelController extends Controller
     /** Query base dos pedidos elegíveis pra fila de picking (nativo). */
     private function nativePickingEligibleQuery(int $supplierId)
     {
+        // MUL-378: mesma definicao das telas do admin (Order::scopeReadyToShip), que
+        // ainda acrescenta whereNull('blocked_at'). Aqui somam-se dois cortes proprios
+        // do painel do fornecedor: a janela de 2026 (MUL-245) e o pago ao fornecedor.
         return Order::query()
+            ->readyToShip()
             ->where('orders.supplier_id', $supplierId)
-            ->where('orders.is_draft', false)
-            ->whereNotNull('orders.label_url')->where('orders.label_url', '!=', '')
-            ->whereNull('orders.shipped_at')
-            ->whereNotNull('orders.paid_at')->where('orders.paid_at', '>=', '2026-01-01')
-            ->whereIn('orders.canonical_status', ['paid', 'processing'])
+            ->where('orders.paid_at', '>=', '2026-01-01')
             // MUL-255: picking so libera pedido ja pago ao fornecedor (wallet/PIX/externo)
             ->whereNotNull('orders.wallet_paid_at');
     }

@@ -118,7 +118,15 @@ class MarketplaceController extends Controller
             // o OAuthController do WL processar o redirect E o exchange — viola arquitetura
             // de relay unico (so o hubai.io tem BLING_CLIENT_SECRET autorizado pelo Bling).
             // OAUTH_RELAY_URL aponta pro hub central (default api.hubai.io).
-            if ($platform === 'bling' && config('bling.use_relay', false)) {
+            // MUL-411: o comentario acima descreve a limitacao que deixou de existir —
+            // "so o hubai.io tem BLING_CLIENT_SECRET autorizado" era verdade enquanto o
+            // Multdrop nao tinha app proprio. Agora tem, entao a conexao nova nao precisa
+            // mais desviar pelo hub: vai direto ao nosso /api/oauth/bling/redirect.
+            // A flag use_relay continua intacta para todo o resto que depende dela.
+            $blingAppProprio = $platform === 'bling'
+                && (string) config('bling.app_novo.client_id', '') !== '';
+
+            if ($platform === 'bling' && config('bling.use_relay', false) && ! $blingAppProprio) {
                 $relayBase = rtrim(config('app.oauth_relay_url') ?: 'https://api.hubai.io', '/');
                 $redirectUrl = "{$relayBase}/api/oauth/{$platform}/redirect?" . http_build_query($params);
             } else {

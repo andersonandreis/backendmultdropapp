@@ -418,6 +418,50 @@ class HubAIOrderWebhookController extends Controller
                 ]);
             }
 
+            // MUL-378: etiqueta espelhada tambem tem de MOVER o estado de processamento.
+            //
+            // Este controller gravava label_url e nunca tocava order_processing_status —
+            // quem avanca pra 'awaiting_dispatch' e o FetchShippingLabelJob, e ele so roda
+            // quando a WL busca a etiqueta ela mesma. Quando o hub entrega o pedido com a
+            // etiqueta ja pronta, o estado ficava parado em 'awaiting_label' pra sempre.
+            // Medido em 17/08/2026: 75 dos 133 pedidos prontos pra separar estavam assim —
+            // etiqueta local baixada e a tela do separador dizendo "aguardando etiqueta".
+            //
+            // Nao e espelho de carimbo do hub (regra 35): e estado local derivado de um fato
+            // local — a etiqueta esta aqui. Mesma conclusao do FetchShippingLabelJob.
+            try {
+                $estadoPreEtiqueta = [null, '', 'awaiting_label', 'label_failed'];
+                if (! empty($order->label_url)
+                    && in_array($order->order_processing_status, $estadoPreEtiqueta, true)
+                    && $order->shipped_at === null
+                    && ! in_array($order->canonical_status, ['cancelled', 'delivered', 'completed', 'shipped'], true)
+                ) {
+                    $deEstado = $order->order_processing_status;
+                    $order->forceFill(['order_processing_status' => 'awaiting_dispatch'])->saveQuietly();
+
+                    \App\Models\OrderStatusHistory::record(
+                        $order,
+                        'order_processing_status',
+                        $deEstado,
+                        'awaiting_dispatch',
+                        'hub_webhook',
+                        ['motivo' => 'etiqueta espelhada presente', 'hubai_order_id' => $hubaiOrderId]
+                    );
+
+                    Log::info('[Label] Estado avancado por etiqueta espelhada (MUL-378)', [
+                        'order_id'       => $order->id,
+                        'hubai_order_id' => $hubaiOrderId,
+                        'de'             => $deEstado,
+                        'para'           => 'awaiting_dispatch',
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('[Label] Falha ao avancar estado por etiqueta espelhada', [
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
+
             // MUL-165: sincroniza items do payload -> order_items local (denormaliza foto)
             if (count($items) > 0) {
                 $this->syncOrderItems($order, $items);

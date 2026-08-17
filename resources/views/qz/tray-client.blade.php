@@ -2,9 +2,22 @@
      conecta websocket local do QZ Tray e configura auth via /admin/qz/certificate + /admin/qz/sign.
      Escuta evento Livewire 'qz-print-label' disparado no ScanShipment/PickingPacking.
      Após qz.print resolver, chama POST /admin/qz/mark-printed pra gravar orders.label_printed_at. --}}
-<script src="https://cdn.jsdelivr.net/gh/qzind/tray@v2.2.4/js/dependencies/rsvp-3.1.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/qzind/tray@v2.2.4/js/dependencies/sha-256.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/qzind/tray@v2.2.4/js/qz-tray.js"></script>
+{{-- MUL-378 17/08/2026: este bloco derrubava as telas de expedicao inteiras.
+     Eram tres <script src> BLOQUEANTES do jsdelivr, injetados ANTES do
+     livewire.min.js no BODY_END. As duas dependencias NAO EXISTEM na tag
+     v2.2.4 (o repo qzind/tray so publica /js/qz-tray.js): o jsdelivr devolvia
+     uma pagina de erro, o Chrome barrava com ERR_BLOCKED_BY_ORB, o parser
+     travava naquela tag e o livewire.min.js nunca executava. Resultado medido
+     no navegador em 17/08: window.Livewire undefined, Alpine undefined, 3
+     componentes no DOM sem bootar — o botao "Buscar Pedido" caia em submit GET
+     e a tela nao fazia nada. Bate com o historico: a injecao do QZ e de
+     17/07/2026 e o ultimo bip do sistema foi 22/07.
+     Nem precisavam existir: o qz-tray.js 2.2.4 tem SHA-256 proprio
+     (_qz.SHA.hash) e cai no Promise nativo quando RSVP falta.
+     Agora e um arquivo unico, do nosso dominio (public/js/qz/qz-tray.js) —
+     sem CDN externo na tela de expedicao. Se algum dia faltar, o 404 nao
+     trava o parser e o guard abaixo apenas avisa no console. --}}
+<script src="{{ asset('js/qz/qz-tray.js') }}"></script>
 <script>
 (function () {
     if (!window.qz) {

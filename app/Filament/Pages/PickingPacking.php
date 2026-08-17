@@ -59,17 +59,69 @@ class PickingPacking extends Page implements HasForms
             return;
         }
 
-        $order = Order::with(["items.product.media", "client"])
-            ->where('order_number', $code)
-            ->orWhere('tracking_number', $code)
-            ->orWhere('invoice_number', $code)
-            ->orWhereHas('items', fn($q) => $q->where('sku', $code))
-            ->first();
+        // MUL-378: o bip procura PRIMEIRO entre os pedidos que de fato esperam separacao
+        // (pago + etiqueta + nao enviado — Order::scopeReadyToShip). Antes era um first()
+        // solto: aceitava calado pedido cancelado, ja enviado ou sem etiqueta. Pior, os
+        // ORs nao estavam agrupados e order_number COLIDE entre vendas distintas, entao
+        // em colisao vinha um pedido qualquer — e o confirm() marcava esse como separado.
+        $porCodigo = function ($w) use ($code) {
+            $w->where('order_number', $code)
+              ->orWhere('tracking_number', $code)
+              ->orWhere('invoice_number', $code)
+              ->orWhereHas('items', fn ($i) => $i->where('sku', $code));
+        };
+        $comRelacoes = fn () => Order::with(["items.product.media", "client"]);
 
-        if (!$order) {
+        $candidatos  = $comRelacoes()->readyToShip()->where($porCodigo)->orderByDesc('id')->get();
+        $foraDoFluxo = false;
+
+        if ($candidatos->isEmpty()) {
+            $candidatos  = $comRelacoes()->where($porCodigo)->orderByDesc('id')->get();
+            $foraDoFluxo = $candidatos->isNotEmpty();
+        }
+
+        if ($candidatos->isEmpty()) {
             $this->foundOrder = null;
             Notification::make()->title('Pedido não encontrado')->body("Nenhum pedido localizado com o código: {$code}")->danger()->send();
             return;
+        }
+
+        $order = $candidatos->first();
+
+        if ($candidatos->count() > 1) {
+            Notification::make()
+                ->title('Atencao: ' . $candidatos->count() . ' pedidos com esse codigo')
+                ->body("Mostrando o mais recente (#{$order->order_number}, id {$order->id}). Numero de pedido se repete entre vendas diferentes — confira antes de bipar.")
+                ->warning()
+                ->persistent()
+                ->send();
+        }
+
+        // Nao recusa (o volume pode estar na mao do separador), mas diz o motivo na cara.
+        if ($foraDoFluxo) {
+            $motivos = [];
+            if ($order->shipped_at) {
+                $motivos[] = 'ja enviado em ' . $order->shipped_at->format('d/m/Y H:i');
+            }
+            if (in_array($order->canonical_status, ['cancelled', 'delivered', 'completed', 'shipped'], true)) {
+                $motivos[] = "status {$order->canonical_status}";
+            }
+            if (empty($order->label_url)) {
+                $motivos[] = 'sem etiqueta';
+            }
+            if (! $order->paid_at) {
+                $motivos[] = 'sem pagamento confirmado no marketplace';
+            }
+            if ($order->is_draft) {
+                $motivos[] = 'rascunho';
+            }
+
+            Notification::make()
+                ->title('Pedido fora da fila de separacao')
+                ->body("#{$order->order_number}: " . (empty($motivos) ? 'nao atende as condicoes de separacao' : implode(' · ', $motivos)) . '.')
+                ->warning()
+                ->persistent()
+                ->send();
         }
 
         // MUL-226-08: pedido bloqueado alerta e não entra no fluxo de separação

@@ -50,19 +50,35 @@ class OrderLogisticsStats extends BaseWidget
             ->whereDate('shipped_at', Carbon::today())
             ->count();
 
-        // Aguardando etiqueta (status atual)
+        // MUL-378: "aguardando etiqueta" e pedido pago que AINDA NAO TEM etiqueta.
+        // Media anterior (ops=awaiting_label + status='paid'): 12.886 pedidos, dos quais
+        // 6 JA tinham etiqueta e 74 JA estavam enviados. O erro tinha duas pontas:
+        //   - orders.status='paid' e o balaio de 12.683 pedidos sem etiqueta (canonical
+        //     'created'), nao o pago pronto pra expedir;
+        //   - order_processing_status nasce 'awaiting_label' por default da coluna e nem
+        //     sempre avanca, entao ele nao prova ausencia de etiqueta — label_url prova.
+        // Regra nova, medida em 17/08/2026: 162 pedidos.
+        $semEtiqueta = ['paid', 'processing', 'awaiting_shipment'];
         $aguardando = (clone $base())
-            ->where('order_processing_status', 'awaiting_label')
-            ->where('status', 'paid')
+            ->where('is_draft', false)
+            ->whereNotNull('paid_at')
+            ->where(function ($w) {
+                $w->whereNull('label_url')->orWhere('label_url', '');
+            })
+            ->whereNull('shipped_at')
+            ->whereIn('canonical_status', $semEtiqueta)
             ->count();
 
-        // Pedidos pagos ha mais de 48h sem envio (alerta SLA)
+        // MUL-378: mesmo problema no alarme de SLA — marcava 12.474 pedidos, entao nunca
+        // significou nada. canonical_status separa trabalho real (paid/processing) do
+        // balaio 'created', e cancelado/entregue ficam fora por nao aceitarem mais envio.
+        // Regra nova: 182 pedidos.
         $atrasados = (clone $base())
-            ->where('status', 'paid')
+            ->where('is_draft', false)
+            ->whereIn('canonical_status', ['paid', 'processing'])
             ->whereNotNull('paid_at')
             ->where('paid_at', '<=', now()->subHours(48))
             ->whereNull('shipped_at')
-            ->whereNotIn('order_processing_status', ['cancelled', 'returned', 'delivered'])
             ->count();
 
         return [

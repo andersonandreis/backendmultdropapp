@@ -29,6 +29,26 @@ class BlingAuthService
         $this->tokenUrl = config("bling.token_url");
     }
 
+    /**
+     * MUL-411 — qual par de credenciais usar na chamada ao /oauth/token.
+     *
+     * Existem DOIS aplicativos Bling vivos ao mesmo tempo:
+     *   antigo  -> emitiu o token do erp_accounts id=1 (estoque, 699 produtos).
+     *              Renova localmente; trocar a chave quebra a sincronizacao.
+     *   novo    -> app proprio do Multdrop, usado nas conexoes NOVAS de marketplace.
+     *
+     * Token so renova com a chave do app que o emitiu — dai a separacao.
+     * Sem BLING_APP_NOVO_* no .env, cai no antigo e nada muda.
+     */
+    protected function credenciais(bool $appNovo): array
+    {
+        if ($appNovo && config("bling.app_novo.client_id")) {
+            return [config("bling.app_novo.client_id"), config("bling.app_novo.client_secret")];
+        }
+
+        return [$this->clientId, $this->clientSecret];
+    }
+
     public function getAuthUrl(MarketplaceAccount $account): string
     {
         $state = $account->id . "|" . Str::random(32);
@@ -41,7 +61,8 @@ class BlingAuthService
         ]);
     }
 
-    public function exchangeCode(string $code): array
+    /** MUL-411: conexao nova de marketplace -> app novo por padrao. */
+    public function exchangeCode(string $code, bool $appNovo = true): array
     {
         if (Cache::has(self::RATE_LIMIT_CACHE_KEY)) {
             $expiresAt = Cache::get(self::RATE_LIMIT_CACHE_KEY . '_ttl', 'em breve');
@@ -50,7 +71,8 @@ class BlingAuthService
             );
         }
 
-        $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+        [$cid, $csec] = $this->credenciais($appNovo);
+        $response = Http::withBasicAuth($cid, $csec)
             ->post($this->tokenUrl, [
                 "grant_type" => "authorization_code",
                 "code" => $code,
@@ -66,7 +88,8 @@ class BlingAuthService
         return $response->json();
     }
 
-    public function refreshToken(string $refreshToken): array
+    /** MUL-411: $appNovo=false por padrao — protege o ErpAccount de estoque. */
+    public function refreshToken(string $refreshToken, bool $appNovo = false): array
     {
         if (Cache::has(self::RATE_LIMIT_CACHE_KEY)) {
             $expiresAt = Cache::get(self::RATE_LIMIT_CACHE_KEY . '_ttl', 'em breve');
@@ -75,7 +98,8 @@ class BlingAuthService
             );
         }
 
-        $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+        [$cid, $csec] = $this->credenciais($appNovo);
+        $response = Http::withBasicAuth($cid, $csec)
             ->post($this->tokenUrl, [
                 "grant_type" => "refresh_token",
                 "refresh_token" => $refreshToken,
@@ -165,7 +189,9 @@ class BlingAuthService
 
             $refreshToken = decrypt($account->bling_refresh_token);
             try {
-                $tokenData = $this->refreshToken($refreshToken);
+                // MUL-411: conta de marketplace que renova AQUI so existe se foi conectada
+                // pelo app novo — as 11 antigas sao centrally_managed e ja retornaram acima.
+                $tokenData = $this->refreshToken($refreshToken, true);
             } catch (\RuntimeException $e) {
                 if (str_contains($e->getMessage(), 'invalid_grant')) {
                     $account->update([

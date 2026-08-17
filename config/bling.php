@@ -4,6 +4,24 @@ return [
     "client_id" => env("BLING_CLIENT_ID"),
     "client_secret" => env("BLING_CLIENT_SECRET"),
     "redirect_uri" => env("BLING_REDIRECT_URI"),
+
+    // MUL-411: app PROPRIO do Multdrop (cadastrado na conta adm.multdrop@gmail.com).
+    //
+    // Convive com o app antigo acima, de proposito. A divisao e por TIPO DE CONTA:
+    //   - erp_accounts (id=1, sincronizacao de estoque de 699 produtos) renova o token
+    //     LOCALMENTE com a chave ANTIGA. Trocar ali quebraria a sincronizacao.
+    //   - marketplace_accounts (as 11 de hoje) sao centrally_managed: o token vem
+    //     pronto do hub via relay, entao nao usam chave nenhuma daqui.
+    //   - conexoes NOVAS de marketplace passam a usar este app.
+    //
+    // Rollback: basta remover BLING_APP_NOVO_* do .env — sem essas variaveis o
+    // comportamento volta a ser exatamente o de antes.
+    "app_novo" => [
+        "client_id"     => env("BLING_APP_NOVO_CLIENT_ID"),
+        "client_secret" => env("BLING_APP_NOVO_CLIENT_SECRET"),
+        "redirect_uri"  => env("BLING_APP_NOVO_REDIRECT_URI", "https://api.multdrop.app/bling/callback"),
+    ],
+
     "api_base" => "https://api.bling.com.br/Api/v3",
     "auth_url" => "https://www.bling.com.br/Api/v3/oauth/authorize",
     "token_url" => "https://www.bling.com.br/Api/v3/oauth/token",

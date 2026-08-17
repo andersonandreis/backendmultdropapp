@@ -308,13 +308,23 @@ class OAuthController extends Controller
                 break;
 
             case 'bling':
-                $blingClientId = config('bling.client_id');
-                // MUL-029-2: se relay esta ativo, FORCAR redirect_uri pra hub central api.hubai.io.
-                // Bling so aceita 1 redirect_uri por app — todas as WLs vao pelo mesmo callback,
-                // que troca code->tokens e relay HMAC pro WL de origem (identificado por source_system).
-                $redirectUri = config('bling.use_relay', false)
-                    ? 'https://api.hubai.io/bling/callback'
-                    : config('bling.redirect_uri');
+                // MUL-411: com app proprio configurado, a conexao nova sai por ele e vai
+                // direto ao NOSSO callback — sem passar pelo hub. O relay so existia porque
+                // o app compartilhado aceita uma unica redirect_uri (api.hubai.io).
+                $blingAppNovo = (string) config('bling.app_novo.client_id', '');
+
+                if ($blingAppNovo !== '') {
+                    $blingClientId = $blingAppNovo;
+                    $redirectUri   = config('bling.app_novo.redirect_uri');
+                } else {
+                    $blingClientId = config('bling.client_id');
+                    // MUL-029-2: se relay esta ativo, FORCAR redirect_uri pra hub central api.hubai.io.
+                    // Bling so aceita 1 redirect_uri por app — todas as WLs vao pelo mesmo callback,
+                    // que troca code->tokens e relay HMAC pro WL de origem (identificado por source_system).
+                    $redirectUri = config('bling.use_relay', false)
+                        ? 'https://api.hubai.io/bling/callback'
+                        : config('bling.redirect_uri');
+                }
                 $authUrl = config('bling.auth_url') . '?' . http_build_query([
                     'response_type' => 'code',
                     'client_id' => $blingClientId,

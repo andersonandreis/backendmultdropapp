@@ -1049,10 +1049,17 @@ class WebhookOrderService
 
         // MUL-363: autopay agora dispara SO no evento "ficou pagavel" (OrderObserver)
 
-        // RelayOrderToLegacy: manutencao de compatibilidade backward
-        // NOV-199: fila legacy dedicada — carga do legado nao compete com a default
-        \App\Jobs\RelayOrderToLegacyJob::dispatch($order->id, $marketplace)
-            ->onQueue('legacy');
+        // HUB-425: relay para o legado so acontece com o sync legado ligado.
+        // Medido em 18/08/2026: goolhub.io responde "No route to host" (cURL 7) --
+        // 100% dos relays falhavam, 292 erros em 7 dias e 37 jobs em failed_jobs,
+        // cada pedido novo gastando 3 tentativas na fila antes de morrer. O gate
+        // usado e o mesmo dos jobs agendados (LEGACY_SYNC_ENABLED, hoje false),
+        // entao religar o legado religa este caminho junto -- sem flag nova.
+        if (config('app.legacy_sync_enabled')) {
+            // NOV-199: fila legacy dedicada — carga do legado nao compete com a default
+            \App\Jobs\RelayOrderToLegacyJob::dispatch($order->id, $marketplace)
+                ->onQueue('legacy');
+        }
 
         Log::info('[WebhookOrderService] RelayOrderToLegacyJob despachado', [
             'order_id'    => $order->id,

@@ -60,7 +60,7 @@ class InventoryObserver
                 ->delay(now()->addSeconds(10));
         }
 
-        \App\Jobs\SyncProductToLegacy::dispatch($product->id);
+        if (config('app.legacy_sync_enabled')) { \App\Jobs\SyncProductToLegacy::dispatch($product->id); } // HUB-425
     }
 
     public function deleted(Inventory $inventory): void

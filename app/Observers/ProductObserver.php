@@ -32,7 +32,7 @@ class ProductObserver
         if (! $product->supplier_id) return;
 
         // Caminho 1: sync para legado (so no hub, LEGACY_SYNC_ENABLED gate no job)
-        SyncProductToLegacy::dispatch($product->id, 'upsert');
+        if (config('app.legacy_sync_enabled')) { SyncProductToLegacy::dispatch($product->id, 'upsert'); } // HUB-425
 
         // Caminho 2: push para hub via federacao (so nos WLs)
         $this->maybePushToHub($product);
@@ -44,7 +44,7 @@ class ProductObserver
         if (! $product->supplier_id) return;
 
         // Caminho 1: sync para legado
-        SyncProductToLegacy::dispatch($product->id, 'upsert');
+        if (config('app.legacy_sync_enabled')) { SyncProductToLegacy::dispatch($product->id, 'upsert'); } // HUB-425
 
         // Caminho 2: push para hub via federacao (so nos WLs)
         $this->maybePushToHub($product);
@@ -54,7 +54,7 @@ class ProductObserver
     {
         if (self::$disableSync) return;
         if (! $product->legacy_sku_pai_id) return;
-        SyncProductToLegacy::dispatch($product->id, 'delete', $product->legacy_sku_pai_id);
+        if (config('app.legacy_sync_enabled')) { SyncProductToLegacy::dispatch($product->id, 'delete', $product->legacy_sku_pai_id); } // HUB-425
         // Nota: delete nao propagado via federacao nesta versao (NOV-171-C)
     }
 

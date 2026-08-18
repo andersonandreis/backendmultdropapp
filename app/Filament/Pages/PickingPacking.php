@@ -41,8 +41,8 @@ class PickingPacking extends Page implements HasForms
         return $form
             ->schema([
                 TextInput::make('scan_code')
-                    ->label('Conferir: ID do Pedido / Rastreio / SKU / NF')
-                    ->placeholder('Ex: ORD-12345, BR123456789BR, SKU-001...')
+                    ->label('Bipe: Produto (EAN / GTIN / SKU) ou Pedido (ID / Rastreio / NF)')
+                    ->placeholder('Ex: 7891234567890, SKU-001, MUL-260818-AE99...')
                     ->autofocus()
                     ->required(),
             ])
@@ -59,16 +59,27 @@ class PickingPacking extends Page implements HasForms
             return;
         }
 
+        // MUL-426: com um pedido aberto na tela, o bip pertence ao fluxo DELE -- e o
+        // separador conferindo os produtos daquele pedido, um a um. So volta para a
+        // busca normal se o codigo for de outro pedido (troca deliberada).
+        if ($this->foundOrder && $this->bipDoPedidoAberto($code)) {
+            $this->form->fill();
+            return;
+        }
+
         // MUL-378: o bip procura PRIMEIRO entre os pedidos que de fato esperam separacao
         // (pago + etiqueta + nao enviado — Order::scopeReadyToShip). Antes era um first()
         // solto: aceitava calado pedido cancelado, ja enviado ou sem etiqueta. Pior, os
         // ORs nao estavam agrupados e order_number COLIDE entre vendas distintas, entao
         // em colisao vinha um pedido qualquer — e o confirm() marcava esse como separado.
+        // MUL-426: o SKU saiu daqui. Bip de PRODUTO nao e "ache o pedido com esse
+        // codigo" e sim "traga o proximo pedido da fila que precisa desse produto" --
+        // tratado abaixo, com prioridade de fila. Aqui ficam so os codigos que
+        // identificam UM pedido especifico.
         $porCodigo = function ($w) use ($code) {
             $w->where('order_number', $code)
               ->orWhere('tracking_number', $code)
-              ->orWhere('invoice_number', $code)
-              ->orWhereHas('items', fn ($i) => $i->where('sku', $code));
+              ->orWhere('invoice_number', $code);
         };
         $comRelacoes = fn () => Order::with(["items.product.media", "client"]);
 
@@ -76,13 +87,23 @@ class PickingPacking extends Page implements HasForms
         $foraDoFluxo = false;
 
         if ($candidatos->isEmpty()) {
+            // MUL-426: nao e codigo de pedido -- tenta como codigo de produto.
+            if ($this->abreProximoPedidoDoProduto($code)) {
+                return;
+            }
+
             $candidatos  = $comRelacoes()->where($porCodigo)->orderByDesc('id')->get();
             $foraDoFluxo = $candidatos->isNotEmpty();
         }
 
         if ($candidatos->isEmpty()) {
             $this->foundOrder = null;
-            Notification::make()->title('Pedido não encontrado')->body("Nenhum pedido localizado com o código: {$code}")->danger()->send();
+            Notification::make()
+                ->title('Nada encontrado')
+                ->body("Nenhum pedido com o codigo {$code}, e nenhum pedido na fila de separacao com esse produto (EAN/GTIN/SKU).")
+                ->danger()
+                ->send();
+            $this->dispatch('scan-feedback', status: 'error');
             return;
         }
 
@@ -138,6 +159,235 @@ class PickingPacking extends Page implements HasForms
         }
 
         $this->foundOrder = $order;
+    }
+
+    /**
+     * MUL-426: variantes aceitaveis de um codigo de barras.
+     *
+     * O leitor manda exatamente o que esta impresso na embalagem, e o cadastro nem
+     * sempre bate: o mesmo produto aparece como EAN-13 na caixa e GTIN-14 no ERP, e
+     * planilha de importacao come zero a esquerda. Comparar so a string crua faz o
+     * bip falhar num produto que ESTA cadastrado.
+     */
+    protected function variantesDoCodigo(string $code): array
+    {
+        $variantes = [$code];
+
+        if (ctype_digit($code)) {
+            $semZeros = ltrim($code, '0');
+            if ($semZeros !== '' && $semZeros !== $code) {
+                $variantes[] = $semZeros;
+            }
+            foreach ([13, 14] as $tamanho) {
+                if (strlen($code) < $tamanho) {
+                    $variantes[] = str_pad($code, $tamanho, '0', STR_PAD_LEFT);
+                }
+            }
+        }
+
+        return array_values(array_unique($variantes));
+    }
+
+    /**
+     * MUL-426: o bip de produto casa por SKU, SKU de variacao, GTIN ou EAN.
+     * Era so `sku` -- por isso bipar a etiqueta de barras do produto nao achava nada.
+     */
+    protected function itemCasaComCodigo(OrderItem $item, string $code): bool
+    {
+        $codigos = $this->variantesDoCodigo($code);
+
+        $candidatos = [
+            $item->sku,
+            $item->variation_sku,
+            $item->product?->gtin,
+            $item->product?->ean,
+        ];
+
+        foreach ($candidatos as $valor) {
+            $valor = trim((string) $valor);
+            if ($valor !== '' && in_array($valor, $codigos, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** MUL-426: mesmo casamento do itemCasaComCodigo, em forma de filtro de consulta. */
+    protected function filtroPorProduto(string $code): \Closure
+    {
+        $codigos = $this->variantesDoCodigo($code);
+
+        return function ($q) use ($codigos) {
+            $q->whereHas('items', function ($i) use ($codigos) {
+                $i->where(function ($w) use ($codigos) {
+                    $w->whereIn('sku', $codigos)
+                      ->orWhereIn('variation_sku', $codigos)
+                      ->orWhereHas('product', fn ($p) => $p->whereIn('gtin', $codigos)->orWhereIn('ean', $codigos));
+                });
+            });
+        };
+    }
+
+    /** Itens do pedido aberto que ainda nao foram bipados. */
+    public function itensFaltando(): int
+    {
+        return $this->foundOrder
+            ? $this->foundOrder->items->whereNull('scanned_at')->count()
+            : 0;
+    }
+
+    /**
+     * MUL-426: trata o bip quando ja existe pedido aberto na tela.
+     *
+     * Devolve true quando consumiu o bip (nao deve cair na busca normal).
+     */
+    protected function bipDoPedidoAberto(string $code): bool
+    {
+        $order = $this->foundOrder;
+        $item  = $order->items->first(fn ($i) => $this->itemCasaComCodigo($i, $code));
+
+        if ($item) {
+            // Item novo: confere e informa o que falta.
+            if (! $item->scanned_at) {
+                $item->forceFill(['scanned_at' => now()])->save();
+                $this->foundOrder = $order->fresh(['items.product.media', 'client']);
+
+                $faltam = $this->itensFaltando();
+
+                Notification::make()
+                    ->title($faltam === 0
+                        ? 'Pedido conferido por completo'
+                        : 'Item conferido (' . intval($item->quantity) . ' un)')
+                    ->body($faltam === 0
+                        ? 'Bipe novamente para seguir o fluxo e imprimir a etiqueta.'
+                        : "Faltam {$faltam} produto(s) deste pedido. Bipe o proximo.")
+                    ->success()
+                    ->send();
+
+                $this->dispatch('scan-feedback', status: 'success');
+                return true;
+            }
+
+            // MUL-426b: item ja conferido. Se o pedido inteiro ja esta conferido, ESTE bip
+            // e o de fechamento -- e o gesto natural do separador num pedido de um produto
+            // so: bipa para trazer o pedido, bipa de novo para fechar e imprimir. Antes
+            // este caminho so avisava "ja conferido" e o fluxo nunca avancava.
+            if ($this->itensFaltando() === 0) {
+                $this->avancaFluxo();
+                return true;
+            }
+
+            Notification::make()
+                ->title('Item ja conferido')
+                ->body(($item->product?->name ?? $item->sku) . ' ja foi bipado. Faltam ' . $this->itensFaltando() . ' produto(s) neste pedido.')
+                ->warning()
+                ->send();
+
+            $this->dispatch('scan-feedback', status: 'success');
+            return true;
+        }
+
+        // Tudo conferido e veio outro bip: e o bip de fechamento -- segue o fluxo normal
+        // (separado -> aguardando envio), que ja imprime conforme a preferencia do usuario.
+        if ($this->itensFaltando() === 0) {
+            $this->avancaFluxo();
+            return true;
+        }
+
+        // Codigo de OUTRO pedido: o separador trocou de pedido de proposito, deixa passar.
+        $ehCodigoDePedido = Order::query()->where(function ($w) use ($code) {
+            $w->where('order_number', $code)
+              ->orWhere('tracking_number', $code)
+              ->orWhere('invoice_number', $code);
+        })->exists();
+
+        if ($ehCodigoDePedido) {
+            return false;
+        }
+
+        // Produto que nao pertence a este pedido, com itens ainda pendentes: nao troca de
+        // pedido no meio da separacao -- isso e o erro que o conferente precisa ver.
+        Notification::make()
+            ->title('Produto nao pertence a este pedido')
+            ->body("O codigo {$code} nao esta no pedido #{$order->order_number}, que ainda tem " . $this->itensFaltando() . ' produto(s) a conferir.')
+            ->danger()
+            ->send();
+        $this->dispatch('scan-feedback', status: 'error');
+
+        return true;
+    }
+
+    /**
+     * MUL-426: bip de produto sem pedido aberto -- puxa o PROXIMO PRIORITARIO.
+     *
+     * Prioridade e a mesma da fila de separacao (MonitorSeparacao): paid_at ascendente,
+     * o mais antigo primeiro, com o que ja esta em separacao na frente. O bip por SKU
+     * antigo usava orderByDesc('id') -- o mais NOVO -- e fazia o separador atender na
+     * ordem inversa da fila.
+     */
+    protected function abreProximoPedidoDoProduto(string $code): bool
+    {
+        $filtro = $this->filtroPorProduto($code);
+
+        $order = Order::with(['items.product.media', 'client'])
+            ->readyToShip()
+            ->where($filtro)
+            ->orderByRaw("CASE WHEN order_processing_status = 'separating' THEN 0 ELSE 1 END")
+            ->orderBy('paid_at', 'asc')
+            ->first();
+
+        if (! $order) {
+            return false;
+        }
+
+        if ($order->blocked_at) {
+            $this->foundOrder = null;
+            $this->dispatch('scan-feedback', status: 'error');
+            Notification::make()
+                ->title('🔒 PEDIDO BLOQUEADO')
+                ->body("O proximo pedido com esse produto (#{$order->order_number}) esta bloqueado" . ($order->block_reason ? " — Motivo: {$order->block_reason}" : '') . '.')
+                ->danger()
+                ->persistent()
+                ->send();
+            return true;
+        }
+
+        $naFila = Order::query()->readyToShip()->where($filtro)->count();
+
+        $item = $order->items->first(fn ($i) => $this->itemCasaComCodigo($i, $code));
+        if ($item && ! $item->scanned_at) {
+            $item->forceFill(['scanned_at' => now()])->save();
+        }
+
+        $this->foundOrder = $order->fresh(['items.product.media', 'client']);
+        $faltam = $this->itensFaltando();
+
+        Notification::make()
+            ->title("Pedido #{$order->order_number} aberto")
+            ->body($faltam === 0
+                ? 'Produto unico, ja conferido. Bipe novamente para imprimir a etiqueta.'
+                : "Produto conferido. Faltam {$faltam} produto(s) neste pedido -- bipe o proximo."
+                . ($naFila > 1 ? " (mais " . ($naFila - 1) . " pedido(s) na fila com esse produto)" : ''))
+            ->success()
+            ->send();
+
+        $this->dispatch('scan-feedback', status: 'success');
+        $this->form->fill();
+
+        return true;
+    }
+
+    /** MUL-426: bip de fechamento -- avanca uma etapa do fluxo que ja existia. */
+    protected function avancaFluxo(): void
+    {
+        $status = $this->foundOrder->order_processing_status;
+
+        if (in_array($status, ['separated', 'awaiting_shipment'], true)) {
+            $this->despachar();
+        } else {
+            $this->separarPedido();
+        }
     }
 
     /**
@@ -389,7 +639,17 @@ class PickingPacking extends Page implements HasForms
                     . 'onerror="this.src=\'' . $fallbackUrl . '\'">';
                 $html .= '<div class="flex-1">';
                 $html .= '<p class="font-medium text-gray-800 text-sm">' . htmlspecialchars($item->product?->name ?? $item->product_name ?? 'Produto') . '</p>';
-                $html .= '<p class="text-xs text-gray-400">SKU: ' . htmlspecialchars($sku) . ' | Qtd: ' . intval($item->quantity) . '</p>';
+                $html .= '<p class="text-xs text-gray-400">SKU: ' . htmlspecialchars($sku) . ' | Qtd: ' . intval($item->quantity);
+                // MUL-426: o codigo que o separador vai bipar, na frente dele
+                $codigoBarras = trim((string) ($item->product?->gtin ?: $item->product?->ean ?: ''));
+                if ($codigoBarras !== '') {
+                    $html .= ' | Cod: ' . htmlspecialchars($codigoBarras);
+                }
+                $html .= '</p>';
+                // MUL-426: estado da conferencia por item
+                $html .= $item->scanned_at
+                    ? '<span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">conferido ' . $item->scanned_at->format('H:i') . '</span>'
+                    : '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">aguardando bip</span>';
                 if ($item->supplier_unit_cost) {
                     $html .= '<p class="text-xs text-gray-500">Custo unit.: R$ ' . number_format((float)$item->supplier_unit_cost, 2, ',', '.') . '</p>';
                 }

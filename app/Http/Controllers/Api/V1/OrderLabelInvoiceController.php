@@ -257,7 +257,13 @@ class OrderLabelInvoiceController extends Controller
         $client = $this->clientOrFail($request);
         $order  = Order::where("id", $id)->where("client_id", $client->id)->firstOrFail();
 
-        if (!empty($order->invoice_number) && !empty($order->invoice_xml)) {
+        // MUL-380: a condicao exigia invoice_xml. Medido em 18/08/2026: 3.581 pedidos tem
+        // numero E chave da NF-e no banco e ZERO tem invoice_xml — ou seja, nunca respondia
+        // pelo banco. Caia no bridge do legado, que esta morto (goolhub.io: no route to
+        // host) e ainda exige legacy_id, ausente em 3.555 deles. Resultado: o painel dizia
+        // "nota nao emitida" para pedido cuja nota estava aqui do lado.
+        // O XML e opcional: serve para baixar o arquivo, nao para saber que a nota existe.
+        if (!empty($order->invoice_number) || !empty($order->invoice_access_key)) {
             return response()->json(["data" => [
                 "numero"           => $order->invoice_number,
                 "serie"            => $order->invoice_series,

@@ -3460,6 +3460,14 @@ class SupplierAdminPanelController extends Controller
             // e a regua do pedido nao tinha como mostrar "embalado" separado de "enviado".
             // Carimba tambem no parcial: o volume foi fechado do mesmo jeito.
             $updateData['packed_at'] = now();
+            // MUL-429: separated_at ficava NULL quando a separacao acontecia pelo bip
+            // (o conferente bipa os produtos e o pedido fecha direto), entao a regua do
+            // pedido pulava "separado" e ia de "aguardando" para "enviado". Quem chegou
+            // aqui conferiu os itens -- e o mesmo instante dos outros dois carimbos.
+            // So preenche se estiver vazio: separacao registrada antes manda.
+            if (!$order->separated_at) {
+                $updateData['separated_at'] = now();
+            }
             if (!$isPartial) {
                 $updateData['shipped_at'] = now();
                 // MUL-093: atualizar canonical_status e status para refletir envio
@@ -3470,15 +3478,22 @@ class SupplierAdminPanelController extends Controller
             $order->update($updateData);
 
             // FIX 4: chamar bridge op=ship para atualizar legado via picking_packing.php.
-            try {
-                $shipRes = $this->bridge->pickingAction('ship', (int) $data['order_id']);
-                if (!($shipRes['success'] ?? false)) {
-                    \Illuminate\Support\Facades\Log::warning('[PickingPacking] Bridge ship falhou: ' . ($shipRes['error'] ?? 'unknown'));
-                    DB::connection('legacy')->statement('UPDATE pedidos SET dt_enviado_tranpostadora_flex = NOW() WHERE id = ?', [$data['order_id']]);
+            // MUL-429: atras do mesmo gate das outras escritas para o legado (HUB-425).
+            // Media hoje: goolhub.io responde "No route to host", entao cada despacho
+            // gastava a ida ao bridge e ainda tentava um UPDATE no banco legado. O
+            // pedido MUL-260816-94ED, despachado em 18/08/2026 17:09, deixou no log
+            // "Bridge ship falhou: HTTP 404" -- ruido puro, nada chegava do outro lado.
+            if (config('app.legacy_sync_enabled')) {
+                try {
+                    $shipRes = $this->bridge->pickingAction('ship', (int) $data['order_id']);
+                    if (!($shipRes['success'] ?? false)) {
+                        \Illuminate\Support\Facades\Log::warning('[PickingPacking] Bridge ship falhou: ' . ($shipRes['error'] ?? 'unknown'));
+                        DB::connection('legacy')->statement('UPDATE pedidos SET dt_enviado_tranpostadora_flex = NOW() WHERE id = ?', [$data['order_id']]);
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('[PickingPacking] Bridge ship exception: ' . $e->getMessage());
+                    try { DB::connection('legacy')->statement('UPDATE pedidos SET dt_enviado_tranpostadora_flex = NOW() WHERE id = ?', [$data['order_id']]); } catch (\Throwable $e2) {}
                 }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('[PickingPacking] Bridge ship exception: ' . $e->getMessage());
-                try { DB::connection('legacy')->statement('UPDATE pedidos SET dt_enviado_tranpostadora_flex = NOW() WHERE id = ?', [$data['order_id']]); } catch (\Throwable $e2) {}
             }
 
             // FIX 3: persistir bipe em order_beeps para audit trail do operador.

@@ -140,6 +140,11 @@ class SyncShopeeOrdersJob implements ShouldQueue
 
             $shopeeStatus = strtolower($rawOrder['order_status'] ?? '');
 
+            // MUL-434: dados da NF-e de SAIDA que a Shopee devolve junto do pedido.
+            // Quando o marketplace libera a etiqueta e porque a nota ja foi emitida --
+            // e a partir daqui o pedido para de aparecer "sem nota" no painel.
+            $notaDeSaida = $this->dadosDaNotaDeSaida($rawOrder);
+
             // MUL-092: importar SOMENTE pedidos com status 'A Enviar' (READY_TO_SHIP).
             // Motivo: evitar duplicar com pedidos ja no legado. Depois que o cliente
             // conecta, so importar o que ainda precisa ser processado (a enviar).
@@ -210,6 +215,21 @@ $existing = Order::where('client_id', $account->client_id)
                     }
                 }
 
+                // MUL-434: preenche a nota de saida so onde estiver vazio. Nota emitida
+                // pelo proprio seller (via Bling) manda; isto aqui e a rede de seguranca
+                // para quem emitiu pelo marketplace.
+                //
+                // MUL-434b: isto vem ANTES do atalho de "nada mudou". Na primeira versao
+                // ficava depois, e como a maioria dos pedidos ja esta com status e
+                // rastreio em dia, o job dava `continue` e a nota nunca era gravada --
+                // medido no pedido 260816H4AXJ2CK, que tem a nota 554 na Shopee e
+                // continuou sem nota nenhuma no banco depois do sync.
+                foreach ($notaDeSaida as $campo => $valor) {
+                    if ($valor !== null && empty($existing->{$campo})) {
+                        $mudancas[$campo] = $valor;
+                    }
+                }
+
                 // Nada mudou: nao gasta escrita nem acorda o observer.
                 if (! $mudancas) {
                     $skipped++;
@@ -257,6 +277,12 @@ $existing = Order::where('client_id', $account->client_id)
                     'tracking_number'        => $rawOrder['tracking_no'] ?? null,
                     'carrier_name'           => $rawOrder['package_list'][0]['shipping_carrier'] ?? $rawOrder['shipping_carrier'] ?? null,
                     'raw_payload'            => json_encode($rawOrder),
+                    // MUL-434: nota de saida ja na criacao (ver helper dadosDaNotaDeSaida)
+                    'invoice_number'         => $notaDeSaida['invoice_number'] ?? null,
+                    'invoice_series'         => $notaDeSaida['invoice_series'] ?? null,
+                    'invoice_access_key'     => $notaDeSaida['invoice_access_key'] ?? null,
+                    'invoice_issued_at'      => $notaDeSaida['invoice_issued_at'] ?? null,
+                    'invoice_status'         => $notaDeSaida['invoice_status'] ?? null,
                     'is_draft'               => true,
                     'draft_reason'           => 'awaiting_validation',
                     'created_at'             => now(),
@@ -316,6 +342,40 @@ $existing = Order::where('client_id', $account->client_id)
             return null;
         }
         return $name;
+    }
+
+    /**
+     * MUL-434: extrai a NF-e de SAIDA do payload da Shopee.
+     *
+     * A Shopee BR manda `invoice_data` no detalhe do pedido: numero, serie, chave de
+     * 44 digitos, data de emissao (unix), valor e situacao. Conferido ao vivo em
+     * 18/08/2026 no pedido 260816H4AXJ2CK -- nota 554, serie 1, status "valid".
+     *
+     * Devolve so o que veio; chave vazia significa pedido sem nota no marketplace.
+     */
+    private function dadosDaNotaDeSaida(array $rawOrder): array
+    {
+        $inv = $rawOrder['invoice_data'] ?? null;
+
+        if (! is_array($inv) || empty($inv['access_key'])) {
+            return [];
+        }
+
+        $saida = [
+            'invoice_access_key' => (string) $inv['access_key'],
+        ];
+
+        if (! empty($inv['number']))        $saida['invoice_number'] = (string) $inv['number'];
+        if (! empty($inv['series_number'])) $saida['invoice_series'] = (string) $inv['series_number'];
+        if (! empty($inv['status']))        $saida['invoice_status'] = (string) $inv['status'];
+
+        if (! empty($inv['issue_date'])) {
+            // MUL-329: horario LOCAL, como o resto das datas de marketplace neste job.
+            $saida['invoice_issued_at'] = \Carbon\Carbon::createFromTimestamp((int) $inv['issue_date'])
+                ->setTimezone(config('app.timezone'));
+        }
+
+        return $saida;
     }
 
     /**

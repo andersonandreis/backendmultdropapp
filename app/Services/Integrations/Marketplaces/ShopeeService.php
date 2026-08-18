@@ -519,7 +519,12 @@ class ShopeeService implements MarketplaceInterface
                 'order_sn_list' => implode(',', $chunk),
                 // MUL-197: total_amount/pay_time/create_time/order_status/tracking_no eram
                 // omitidos — raiz das cascas (total=0, paid_at NULL) criadas pelo sync.
-                'response_optional_fields' => 'buyer_user_id,buyer_username,item_list,recipient_address,shipping_carrier,package_list,order_sn,total_amount,pay_time,create_time,order_status,tracking_no',
+                // MUL-434: + invoice_data. A Shopee BR devolve a NF-e de SAIDA no proprio
+            // detalhe do pedido (numero, serie, chave, emissao, valor e situacao) e a
+            // gente nunca pedia esse campo. Sem ele, invoice_* so era preenchido pelo
+            // webhook do Bling (parado ha dias) ou na mao -- e o pedido com etiqueta
+            // emitida, que por definicao ja tem nota, aparecia sem nota nenhuma.
+            'response_optional_fields' => 'buyer_user_id,buyer_username,item_list,recipient_address,shipping_carrier,package_list,order_sn,total_amount,pay_time,create_time,order_status,tracking_no,invoice_data',
                 'shop_id' => $shopId,
                 'access_token' => $accessToken,
             ];
@@ -1509,7 +1514,8 @@ class ShopeeService implements MarketplaceInterface
         return $this->callApi('/api/v2/order/get_order_detail', [
             'order_sn_list'            => implode(',', $orderSns),
             // MUL-197: + pay_time/create_time/buyer_user_id (enriquecimento de rascunho precisa de paid_at)
-            'response_optional_fields' => 'buyer_username,buyer_user_id,item_list,total_amount,order_status,tracking_no,shipping_carrier,package_list,recipient_address,pay_time,create_time',
+            // MUL-434: ver comentario em fetchOrders -- invoice_data traz a NF-e de saida.
+            'response_optional_fields' => 'buyer_username,buyer_user_id,item_list,total_amount,order_status,tracking_no,shipping_carrier,package_list,recipient_address,pay_time,create_time,invoice_data',
             'shop_id'                  => $shopId,
             'access_token'             => $accessToken,
         ], 'GET');

@@ -156,12 +156,14 @@ class HubAIOrderWebhookController extends Controller
             'buyer_nickname'         => $orderData['buyer_nickname'] ?? null,
             // MUL-214 item 20: endereco do comprador + data de entrega vindos do hub
             'customer_address'       => $orderData['customer_address'] ?? null,
+            // MUL-435: ver a nota no invoice_issued_at.
             'delivered_at'           => ! empty($orderData['delivered_at'])
-                ? \Carbon\Carbon::parse($orderData['delivered_at'])
+                ? \Carbon\Carbon::parse($orderData['delivered_at'])->setTimezone(config('app.timezone'))
                 : null,
             // MUL-343: shipped_at nunca era lido do payload do hub
+            // MUL-435: ver a nota no invoice_issued_at.
             'shipped_at'             => ! empty($orderData['shipped_at'])
-                ? \Carbon\Carbon::parse($orderData['shipped_at'])
+                ? \Carbon\Carbon::parse($orderData['shipped_at'])->setTimezone(config('app.timezone'))
                 : null,
             // MUL-352: financeiro do pedido — taxa, frete e desconto
             'marketplace_fee'        => $orderData['marketplace_fee'] ?? null,
@@ -169,8 +171,9 @@ class HubAIOrderWebhookController extends Controller
             'shipping_cost'          => $orderData['shipping_cost'] ?? null,
             'discount_amount'        => $orderData['discount_amount'] ?? null,
             'external_shipping_id'   => $orderData['external_shipping_id'] ?? null,
+            // MUL-435: ver a nota no invoice_issued_at -- normaliza para o fuso da app.
             'paid_at'                => ! empty($orderData['paid_at'])
-                ? \Carbon\Carbon::parse($orderData['paid_at'])
+                ? \Carbon\Carbon::parse($orderData['paid_at'])->setTimezone(config('app.timezone'))
                 : null,
             // MUL-363 Fase 4: wallet_paid_at/wallet_transaction_id NAO entram mais pelo
             // espelho — cada backend e dono absoluto dos seus carimbos de pagamento
@@ -192,16 +195,31 @@ class HubAIOrderWebhookController extends Controller
             'tenant_slug'            => $orderData['tenant_slug'] ?? null,
             'origin_tenant_slug'     => $orderData['origin_tenant_slug'] ?? null,
             // MUL-237: data real da venda no marketplace
+            // MUL-435: ver a nota no invoice_issued_at.
             "marketplace_created_at" => ! empty($orderData["marketplace_created_at"])
-                ? \Carbon\Carbon::parse($orderData["marketplace_created_at"])
+                ? \Carbon\Carbon::parse($orderData["marketplace_created_at"])->setTimezone(config('app.timezone'))
                 : null,
             // MUL-252: NF-e saida + entrada vindas do hub (null = ignora, MUL-165)
             'invoice_number'         => $orderData['invoice_number'] ?? null,
             'invoice_series'         => $orderData['invoice_series'] ?? null,
             'invoice_status'         => $orderData['invoice_status'] ?? null,
             'invoice_access_key'     => $orderData['invoice_access_key'] ?? null,
+            // MUL-435: ->setTimezone e obrigatorio aqui.
+            //
+            // As colunas de data de `orders` sao TIMESTAMP, entao o MySQL interpreta o
+            // que recebe no fuso da SESSAO (-03:00 nesta app). O Carbon::parse, porem,
+            // preserva o fuso que veio na string -- e o hub serializa parte dos campos
+            // com offset ("2026-08-16T11:14:13-03:00") e parte em UTC
+            // ("2026-08-16T14:13:59.000000Z"), conforme o payload monte a data crua ou
+            // via toIso8601String. Nos campos em UTC o Laravel gravava "14:13:59" e o
+            // MySQL lia isso como 14:13:59 de Brasilia: 3 horas a mais.
+            //
+            // Medido em 18/08/2026 no pedido MUL-260816-94ED: nota emitida 11:13:59,
+            // gravada como 17:13:59 UTC (= 14:13:59 BRT). O paid_at do MESMO payload
+            // ficou certo, porque veio com offset -- e foi essa diferenca dentro do
+            // mesmo pedido que denunciou o problema.
             'invoice_issued_at'      => ! empty($orderData['invoice_issued_at'])
-                ? \Carbon\Carbon::parse($orderData['invoice_issued_at'])
+                ? \Carbon\Carbon::parse($orderData['invoice_issued_at'])->setTimezone(config('app.timezone'))
                 : null,
             'invoice_url'            => $orderData['invoice_url'] ?? null,
             'invoice_xml_url'        => $orderData['invoice_xml_url'] ?? null,

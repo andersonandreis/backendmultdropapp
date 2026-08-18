@@ -279,27 +279,166 @@ class SupplierAdminPanelController extends Controller
      * GET /api/v1/supplier-admin/dashboard
      * Le do bridge legado supplier_dashboard.php.
      */
+    /**
+     * MUL-417 — dashboard do painel admin, lido do BANCO LOCAL.
+     *
+     * Era 100% legado: uma unica chamada a goolhub.io/api/bridge/supplier_dashboard.php.
+     * Com o legado fora do ar a chamada morre em `cURL error 7: No route to host`, o
+     * metodo devolvia 502, o Cloudflare trocava por pagina de erro SEM cabecalho de CORS
+     * e o navegador reportava "failed to fetch" — a tela ficava presa em "Carregando
+     * dashboard do fornecedor...". Reproduzido e medido em 18/08/2026.
+     *
+     * O contrato de resposta e exatamente o que o front ja consome
+     * (SupplierAdminDashboard), so que agora cada numero sai de uma consulta local.
+     * Nenhuma mudanca no front foi necessaria.
+     */
     public function dashboard(Request $request): JsonResponse
     {
         $this->requireSupplierAdmin($request);
-        $res = $this->bridge->getSupplierDashboard($this->legacyLojaId($request));
-
-        if (!$res['success']) {
-            return response()->json(['error' => $res['error'] ?? 'Bridge falhou'], 502);
-        }
-
-        // MES-028: sobrescrever etiquetas.impressas com dado real do banco novo
-        // O legado nao rastreia data_impresso_etiqueta para pedidos migrados para o novo sistema.
-        // Usamos label_printed_at do banco novo como fonte de verdade.
         $supplierId = $this->supplierId();
-        $impressasNovo = Order::where('supplier_id', $supplierId)
-            ->whereNotNull('label_printed_at')
-            ->count();
-        if ($impressasNovo > 0 && isset($res['data']['etiquetas'])) {
-            $res['data']['etiquetas']['impressas'] = $impressasNovo;
+        $supplier   = $this->_resolvedSupplier;
+
+        $desde15 = now()->subDays(15)->startOfDay();
+        $desde30 = now()->subDays(30)->startOfDay();
+
+        // --- catalogo -------------------------------------------------------
+        $skus = DB::table('products')
+            ->where('supplier_id', $supplierId)
+            ->selectRaw("
+                COUNT(*)                                        AS vinculados,
+                SUM(COALESCE(virtual_stock_qty, 0) <= 0)        AS sem_estoque,
+                SUM(is_active = 1)                              AS ativos,
+                SUM(is_active = 0)                              AS inativos,
+                SUM(category_id IS NULL)                        AS sem_categoria
+            ")
+            ->first();
+
+        // --- pedidos dos ultimos 15 dias ------------------------------------
+        // "pago" aqui e o pagamento AO FORNECEDOR (wallet_paid_at): e o que este painel
+        // precisa saber. paid_at e do marketplace e responde outra pergunta (regra 33).
+        // Cancelado fica de fora: nao e trabalho nem cobranca.
+        $ped = DB::table('orders')
+            ->where('supplier_id', $supplierId)
+            ->where('is_draft', 0)
+            ->where('created_at', '>=', $desde15)
+            ->where('canonical_status', '<>', 'cancelled')
+            ->selectRaw("
+                SUM(wallet_paid_at IS NULL)                                                          AS nao_pagos,
+                SUM(wallet_paid_at IS NULL AND (label_url IS NULL OR label_url = ''))                AS nao_pagos_sem_etiq,
+                SUM(wallet_paid_at IS NOT NULL AND label_url IS NOT NULL AND label_url <> '')        AS pagos_com_etiq,
+                SUM(wallet_paid_at IS NOT NULL AND (label_url IS NULL OR label_url = ''))            AS pagos_sem_etiq
+            ")
+            ->first();
+
+        // --- etiquetas ------------------------------------------------------
+        // em_aberto = tem etiqueta, ninguem imprimiu e o pedido nao saiu (trabalho parado).
+        $etq = DB::table('orders')
+            ->where('supplier_id', $supplierId)
+            ->where('is_draft', 0)
+            ->selectRaw("
+                SUM(label_url IS NOT NULL AND label_url <> '' AND label_printed_at IS NULL AND shipped_at IS NULL) AS em_aberto,
+                SUM(label_printed_at IS NOT NULL)                                                                  AS impressas,
+                SUM(shipped_at IS NOT NULL)                                                                        AS enviadas
+            ")
+            ->first();
+
+        // --- SAC ------------------------------------------------------------
+        $tickets = DB::table('support_tickets')
+            ->where('supplier_id', $supplierId)
+            ->selectRaw('status, COUNT(*) AS n')
+            ->groupBy('status')
+            ->pluck('n', 'status');
+        $sacDe = fn (array $chaves) => (int) collect($chaves)->sum(fn ($k) => (int) ($tickets[$k] ?? 0));
+
+        // --- integracoes ----------------------------------------------------
+        // O front rotula por id_canal do legado (3 Shopee, 6 ML, 20 Bling, 10 Amazon,
+        // 7 Magalu, 13 TikTok). mercado_livre e mercadolivre convivem no banco (as duas
+        // grafias existem) e caem no mesmo canal.
+        $idCanal = [
+            'shopee'        => 3,
+            'mercadolivre'  => 6,
+            'mercado_livre' => 6,
+            'bling'         => 20,
+            'amazon'        => 10,
+            'magalu'        => 7,
+            'tiktok'        => 13,
+        ];
+        $porCanal = [];
+        foreach (DB::table('marketplace_accounts')->selectRaw('platform, COUNT(*) AS n')->groupBy('platform')->get() as $linha) {
+            $canal = $idCanal[strtolower((string) $linha->platform)] ?? 0;
+            $porCanal[$canal] = ($porCanal[$canal] ?? 0) + (int) $linha->n;
+        }
+        $integracoesTotal = array_sum($porCanal);
+        $porCanalLista    = [];
+        foreach ($porCanal as $canal => $qtd) {
+            $porCanalLista[] = ['id_canal' => (int) $canal, 'qtd' => (int) $qtd];
         }
 
-        return response()->json(['data' => $res['data']]);
+        // --- vendas dos ultimos 30 dias -------------------------------------
+        // Data da VENDA no marketplace quando existe (MUL-237); senao a de entrada.
+        $vendas = DB::table('orders')
+            ->where('supplier_id', $supplierId)
+            ->where('is_draft', 0)
+            ->where('canonical_status', '<>', 'cancelled')
+            ->whereRaw('COALESCE(marketplace_created_at, created_at) >= ?', [$desde30])
+            ->selectRaw('DATE(COALESCE(marketplace_created_at, created_at)) AS dia, COUNT(*) AS qtd, SUM(COALESCE(total,0)) AS total')
+            ->groupBy('dia')
+            ->orderBy('dia')
+            ->get();
+
+        return response()->json(['data' => [
+            'loja' => [
+                'id'           => (int) $supplierId,
+                'nome'         => $supplier->display_name ?? $supplier->trade_name ?? $supplier->company_name ?? null,
+                'razao_social' => $supplier->company_name ?? null,
+                'cnpj'         => $supplier->document ?? null,
+                'endereco'     => trim(implode(', ', array_filter([
+                    $supplier->address ?? null,
+                    $supplier->address_number ?? null,
+                    $supplier->address_complement ?? null,
+                ]))) ?: null,
+                'email'        => $supplier->email ?? null,
+            ],
+            'skus' => [
+                'vinculados'    => (int) ($skus->vinculados ?? 0),
+                'sem_estoque'   => (int) ($skus->sem_estoque ?? 0),
+                'ativos'        => (int) ($skus->ativos ?? 0),
+                'inativos'      => (int) ($skus->inativos ?? 0),
+                'sem_categoria' => (int) ($skus->sem_categoria ?? 0),
+            ],
+            'pedidos_15d' => [
+                'nao_pagos'          => (int) ($ped->nao_pagos ?? 0),
+                'nao_pagos_sem_etiq' => (int) ($ped->nao_pagos_sem_etiq ?? 0),
+                'pagos_com_etiq'     => (int) ($ped->pagos_com_etiq ?? 0),
+                'pagos_sem_etiq'     => (int) ($ped->pagos_sem_etiq ?? 0),
+            ],
+            'etiquetas' => [
+                'em_aberto' => (int) ($etq->em_aberto ?? 0),
+                'impressas' => (int) ($etq->impressas ?? 0),
+                'enviadas'  => (int) ($etq->enviadas ?? 0),
+            ],
+            'sac' => [
+                'abertos'         => $sacDe(['open', 'new', 'aberto']),
+                'novamente'       => $sacDe(['reopened', 'novamente']),
+                'respondidos'     => $sacDe(['answered', 'responded', 'respondido']),
+                'em_tratamento'   => $sacDe(['in_progress', 'em_tratamento', 'pending']),
+                'fechados'        => $sacDe(['closed', 'resolved', 'fechado']),
+                'em_analise'      => $sacDe(['analysis', 'in_analysis', 'em_analise']),
+                'prazo_expirado'  => $sacDe(['expired', 'overdue', 'prazo_expirado']),
+            ],
+            'integracoes' => [
+                'total'     => (int) $integracoesTotal,
+                'por_canal' => $porCanalLista,
+            ],
+            'vendas_30d' => [
+                'total_brl' => round((float) $vendas->sum('total'), 2),
+                'por_dia'   => $vendas->map(fn ($l) => [
+                    'date'  => (string) $l->dia,
+                    'qtd'   => (int) $l->qtd,
+                    'total' => round((float) $l->total, 2),
+                ])->values()->all(),
+            ],
+        ]]);
     }
 
     /**

@@ -144,10 +144,15 @@ class SyncShopeeOrdersJob implements ShouldQueue
             // Motivo: evitar duplicar com pedidos ja no legado. Depois que o cliente
             // conecta, so importar o que ainda precisa ser processado (a enviar).
             // Alinha com ImportMarketplaceAccountDataJob::importShopeeOrders.
-            if ($shopeeStatus !== 'ready_to_ship') {
-                $skipped++;
-                continue;
-            }
+            // MUL-424: o filtro por READY_TO_SHIP era aplicado AQUI, antes de procurar o
+            // pedido no banco. Quando a Shopee virava o pedido para SHIPPED, o payload era
+            // descartado e o pedido ficava congelado como "a enviar" para sempre: em
+            // 18/08/2026, 59 dos 80 pedidos da fila de separacao ja estavam SHIPPED na
+            // Shopee. Nenhum outro caminho consertava isso -- shipped_at so era escrito
+            // pelo legado e pelo despacho manual do painel.
+            // O filtro continua valendo para a CRIACAO (razao original da MUL-092: nao
+            // duplicar pedido que ja existe no legado), e por isso desceu para o ramo do
+            // else. Ele nao pode mais impedir a ATUALIZACAO de um pedido que ja e nosso.
 
             // MUL-092: dedup robusto — cruzar com pedidos do legado (external_order_id)
             // e com pedidos criados via OAuth (marketplace_order_id). Sem cruzar com
@@ -165,22 +170,46 @@ $existing = Order::where('client_id', $account->client_id)
 
             if ($existing) {
                 // Pedido ja existe — atualizar status e tracking se mudou
-                $alreadyPaid = in_array($existing->status, ['paid', 'shipped', 'completed', 'delivered']);
+                $novoStatus = $this->mapShopeeStatus($shopeeStatus);
 
-                if ($alreadyPaid) {
+                // MUL-424: antes, QUALQUER pedido local em paid/shipped/completed/delivered
+                // era pulado -- e era exatamente isso que congelava o pedido pago em
+                // "a enviar" mesmo depois de despachado na Shopee. A regra correta e outra:
+                // o status so AVANCA, nunca volta. Assim a Shopee consegue nos contar que
+                // enviou (ou cancelou), e um payload atrasado nao rebaixa um pedido que ja
+                // seguiu adiante.
+                if ($this->rankStatus($novoStatus) <= $this->rankStatus($existing->canonical_status ?: $existing->status)) {
                     $skipped++;
                     continue;
                 }
 
-                $existing->update([
-                    'status'           => $this->mapShopeeStatus($shopeeStatus),
-                    'canonical_status' => $this->mapShopeeStatus($shopeeStatus),
+                $mudancas = [
+                    'status'           => $novoStatus,
+                    'canonical_status' => $novoStatus,
                     'tracking_number'  => $rawOrder['tracking_no'] ?? $existing->tracking_number,
                     'carrier_name'     => $rawOrder['package_list'][0]['shipping_carrier'] ?? $rawOrder['shipping_carrier'] ?? $existing->carrier_name,
                     'updated_at'       => now(),
-                ]);
+                ];
+
+                // MUL-424: nenhum caminho de marketplace escrevia shipped_at (so o legado e
+                // o despacho manual), entao jaFoiEnviado() e os relatorios de expedicao nao
+                // enxergavam o envio feito na propria Shopee. E o instante em que ficamos
+                // sabendo, nao o do despacho -- a Shopee nao manda essa hora na listagem, e
+                // a hora real de saida continua no rastreio.
+                if (in_array($novoStatus, ['shipped', 'delivered', 'completed'], true) && ! $existing->shipped_at) {
+                    $mudancas['shipped_at'] = now();
+                }
+
+                $existing->update($mudancas);
                 $updated++;
             } else {
+                // MUL-424 / MUL-092: aqui sim o filtro vale. Pedido que ainda nao e nosso e
+                // nao esta "a enviar" nao entra -- e o que evita duplicar com o legado.
+                if ($shopeeStatus !== 'ready_to_ship') {
+                    $skipped++;
+                    continue;
+                }
+
                 // MUL-197: pedido nasce RASCUNHO (is_draft=1) e so vira pedido normal na
                 // PROMOCAO (DraftOrderPromoter), quando completo: customer_name, total>0,
                 // itens, paid_at. Rascunho nao dispara fanout/efeitos (OrderObserver
@@ -270,6 +299,24 @@ $existing = Order::where('client_id', $account->client_id)
             return null;
         }
         return $name;
+    }
+
+    /**
+     * MUL-424: ordem de avanco do ciclo de vida do pedido. Existe para o sync nunca
+     * REBAIXAR um pedido: payload antigo que chega atrasado nao pode desfazer um envio
+     * ja registrado. cancelled/returned ficam no topo por serem desfechos -- valem
+     * sobre qualquer etapa anterior.
+     */
+    private function rankStatus(?string $status): int
+    {
+        return match ($status) {
+            'pending'                => 0,
+            'processing', 'paid'     => 1,
+            'shipped'                => 2,
+            'delivered', 'completed' => 3,
+            'returned', 'cancelled'  => 4,
+            default                  => 0,
+        };
     }
 
     private function mapShopeeStatus(string $shopeeStatus): string

@@ -133,11 +133,13 @@ class SyncMLOrdersJob implements ShouldQueue
             // MUL-091: NOV-158 — importar apenas pedidos em aberto.
             // Skip pedidos ja enviados/finalizados/cancelados — nao precisam de acao.
             $shippingStatus = strtolower(($rawOrder["shipping"] ?? [])["status"] ?? "");
-            if (in_array($mlStatus, ["cancelled", "invalid"], true)
-                || in_array($shippingStatus, ["shipped", "delivered", "not_delivered"], true)) {
-                $skipped++;
-                continue;
-            }
+            // MUL-424: este guard existia para nao IMPORTAR pedido ja fechado (NOV-158),
+            // mas rodava antes da busca no banco -- entao pedido que JA E NOSSO e que a ML
+            // ja despachou tambem era descartado, e ficava parado na fila de separacao para
+            // sempre (mesmo defeito medido na Shopee). Agora ele so barra a criacao; a
+            // atualizacao de pedido nosso segue adiante.
+            $pedidoFechadoNoML = in_array($mlStatus, ["cancelled", "invalid"], true)
+                || in_array($shippingStatus, ["shipped", "delivered", "not_delivered"], true);
 
             // FOR-124: fora do escopo de tenant -- pedido com supplier_id NULL some do whereIn
             // e a deduplicacao acaba criando duplicata.
@@ -145,6 +147,11 @@ class SyncMLOrdersJob implements ShouldQueue
                 ->where('external_order_id', $mlOrderId)
                 ->where('source', 'mercadolivre')
                 ->first();
+
+            if (! $existing && $pedidoFechadoNoML) {
+                $skipped++;
+                continue;
+            }
 
             if ($existing) {
                 if (in_array($existing->status, ['shipped', 'completed', 'delivered'])) {
@@ -167,6 +174,23 @@ class SyncMLOrdersJob implements ShouldQueue
                 }
                 if (! $existing->marketplace_created_at && $criadoNoMkt) {
                     $updates['marketplace_created_at'] = $criadoNoMkt;
+                }
+
+                // MUL-424: no ML o status do PEDIDO continua "paid" depois do despacho --
+                // quem conta que saiu e o shipping.status. Sem traduzir isso, mapMLStatus
+                // devolvia "paid" para sempre e o pedido nunca saia da fila de separacao.
+                $statusDeEnvio = match ($shippingStatus) {
+                    'shipped'       => 'shipped',
+                    'delivered'     => 'delivered',
+                    'not_delivered' => 'shipped',
+                    default         => null,
+                };
+                if ($statusDeEnvio) {
+                    $updates['status']           = $statusDeEnvio;
+                    $updates['canonical_status'] = $statusDeEnvio;
+                    if (! $existing->shipped_at) {
+                        $updates['shipped_at'] = now();
+                    }
                 }
                 // MUL-204: persistir shipping.status pra distinguir handling (adiada) de ready_to_ship
                 $mappedShipping = $shippingStatus ? $this->mapMLShippingStatus($shippingStatus) : null;

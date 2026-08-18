@@ -126,6 +126,10 @@ class FetchShippingLabelJob implements ShouldQueue, ShouldBeUnique
                 && !str_contains($order->label_url, 'mock')
                 && !str_contains($order->label_url, 'sistemagrupoonline')
                 && !str_contains($order->label_url, 'goolhub.io')) {
+                // MUL-379: sair daqui e correto para a ETIQUETA (ja temos), mas este e
+                // tambem o estado em que a logistica ja existe — e era exatamente aqui
+                // que a transportadora se perdia. Completa antes de sair.
+                $this->completarLogistica($order, $labelService);
                 Log::info("[FetchLabel] Order #{$order->id} ja tem etiqueta local, ignorando");
                 return;
             }
@@ -147,6 +151,8 @@ class FetchShippingLabelJob implements ShouldQueue, ShouldBeUnique
                         'label_status_reason'     => null,
                         'label_error_at'          => null,
                     ]);
+
+                    $this->completarLogistica($order, $labelService);
 
                     OrderLabelQueue::where('order_id', $order->id)
                         ->update(['status' => 'available', 'error_log' => null]);
@@ -220,6 +226,49 @@ class FetchShippingLabelJob implements ShouldQueue, ShouldBeUnique
      * Grava o motivo padronizado em orders.label_status_reason (MES-046-A).
      * Nunca lanca excecao — falha silenciosa com log.
      */
+    /**
+     * MUL-379 — completa transportadora e rastreio quando a etiqueta existe.
+     *
+     * QUANDO a transportadora aparece: no momento em que a logistica e arranjada, que e o
+     * mesmo momento em que a etiqueta passa a existir. Esse evento ja e recebido e
+     * processado — a Shopee empurra o code 4 (tracking_update), o ShopeeWebhookController
+     * despacha este job, e ML/Bling chegam aqui por outros gatilhos. Entao nao ha processo
+     * novo nem coletor por marketplace: o preenchimento mora nos dois pontos deste job em
+     * que sabemos que ha etiqueta (Gate 1 e o ramo ready), e a leitura por canal fica no
+     * ShippingLabelService::logisticaDoMarketplace, que ja fala com cada marketplace.
+     *
+     * Nunca sobrescreve valor existente.
+     */
+    private function completarLogistica(Order $order, ShippingLabelService $labelService): void
+    {
+        if (! empty($order->carrier_name) && ! empty($order->tracking_number)) {
+            return;
+        }
+
+        $logistica = $labelService->logisticaDoMarketplace($order);
+        if ($logistica === []) {
+            return;
+        }
+
+        $completar = [];
+        if (empty($order->carrier_name) && ! empty($logistica['carrier'])) {
+            $completar['carrier_name'] = $logistica['carrier'];
+        }
+        if (empty($order->tracking_number) && ! empty($logistica['tracking'])) {
+            $completar['tracking_number'] = $logistica['tracking'];
+        }
+        if ($completar === []) {
+            return;
+        }
+
+        $order->forceFill($completar)->saveQuietly();
+        Log::info('[MUL-379] logistica completada com a etiqueta', [
+            'order_id' => $order->id,
+            'source'   => $order->source,
+            'campos'   => array_keys($completar),
+        ]);
+    }
+
     private function setLabelReason(Order $order, string $reason): void
     {
         try {

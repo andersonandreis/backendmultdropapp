@@ -635,6 +635,94 @@ class ShippingLabelService
      * @param  Order $order
      * @return array{ready: bool, label_url?: string, reason?: string, retry_in_minutes?: int}
      */
+    /**
+     * MUL-379 — transportadora e rastreio, lidos do marketplace.
+     *
+     * QUANDO a transportadora aparece: no instante em que a logistica e arranjada, que e
+     * o mesmo instante em que a etiqueta passa a existir. Esse evento JA e recebido e
+     * processado aqui — a Shopee empurra o code 4 (tracking_update) e o
+     * ShopeeWebhookController despacha o FetchShippingLabelJob; ML e Bling caem no mesmo
+     * job por outros gatilhos. Por isso a leitura mora aqui e nao num processo proprio:
+     * cada ramo reusa a chamada que este servico ja faz para achar a etiqueta.
+     *
+     * Quem grava e um lugar so (FetchShippingLabelJob), para todos os canais.
+     * Canal que nao expoe a informacao devolve array vazio, sem quebrar nada.
+     */
+    public function logisticaDoMarketplace(Order $order): array
+    {
+        try {
+            return match ($order->source) {
+                'shopee'       => $this->logisticaShopee($order),
+                'mercadolivre' => $this->logisticaML($order),
+                default        => [],
+            };
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[MUL-379] falha ao ler logistica do marketplace', [
+                'order_id' => $order->id,
+                'source'   => $order->source,
+                'error'    => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    /** Shopee: o mesmo package_list que ja usamos para o package_number traz o shipping_carrier. */
+    private function logisticaShopee(Order $order): array
+    {
+        $account = $this->findShopeeAccount($order);
+        $orderSn = $order->marketplace_order_id ?? $order->order_number;
+        if (! $account || ! $orderSn) {
+            return [];
+        }
+
+        $shopee = app(\App\Services\Integrations\Marketplaces\ShopeeService::class);
+        $token  = $shopee->getValidAccessToken($account);
+        if (! $token) {
+            return [];
+        }
+
+        $det = $shopee->getOrderDetail((int) $account->shop_id, $token, [(string) $orderSn]);
+        $d   = $det['response']['order_list'][0] ?? [];
+
+        return [
+            'carrier'  => $d['package_list'][0]['shipping_carrier'] ?? $d['shipping_carrier'] ?? null,
+            'tracking' => $d['tracking_no'] ?? null,
+        ];
+    }
+
+    /** ML: o shipment que ja consultamos para saber se a etiqueta saiu diz a transportadora. */
+    private function logisticaML(Order $order): array
+    {
+        $account = $this->findMLAccount($order);
+        if (! $account) {
+            return [];
+        }
+
+        $service = app(MercadoLivreService::class);
+        $token   = $service->getValidToken($account);
+        if (! $token) {
+            return [];
+        }
+
+        $shippingId = $order->external_shipping_id
+            ?: ($order->external_order_id ? $this->fetchShippingIdFromML($token, (string) $order->external_order_id) : null);
+        if (! $shippingId) {
+            return [];
+        }
+
+        $shipment = $this->getShipmentDetails($token, (string) $shippingId);
+        if (! $shipment) {
+            return [];
+        }
+
+        // tracking_method e a transportadora de fato (Correios, Loggi, Mercado Envios);
+        // shipping_option.name descreve o servico e serve de segunda opcao.
+        return [
+            'carrier'  => $shipment['tracking_method'] ?? ($shipment['shipping_option']['name'] ?? null),
+            'tracking' => $shipment['tracking_number'] ?? null,
+        ];
+    }
+
     protected function checkShopeeLabel(Order $order): array
     {
         $account = $this->findShopeeAccount($order);

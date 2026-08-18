@@ -462,6 +462,24 @@ class HubAIOrderWebhookController extends Controller
                 ]);
             }
 
+            // MUL-417: a transportadora tambem se resolve AQUI, porque este e o evento que
+            // de fato acontece. Medido em 18/08/2026: das 301 etiquetas dos ultimos 2 dias,
+            // 293 chegaram espelhadas do hub e so 8 foram baixadas por este backend — o
+            // FetchShippingLabelJob rodou UMA vez no dia. Completar logistica so no job
+            // (como eu tinha feito) cobria quase nada: 11 de 21 pedidos de hoje ficaram sem
+            // transportadora.
+            //
+            // Nao e coletor novo nem chamada sincrona no webhook: despacha o MESMO job, que
+            // no Gate 1 ("ja tem etiqueta local") completa transportadora e rastreio pelo
+            // ShippingLabelService. O lock de 300s do proprio job evita repique.
+            if (! empty($order->label_url)
+                && empty($order->carrier_name)
+                && $order->shipped_at === null
+                && ! in_array($order->canonical_status, ['cancelled', 'delivered', 'completed'], true)
+            ) {
+                \App\Jobs\FetchShippingLabelJob::dispatch($order->id, 'label_espelhada')->onQueue('default');
+            }
+
             // MUL-165: sincroniza items do payload -> order_items local (denormaliza foto)
             if (count($items) > 0) {
                 $this->syncOrderItems($order, $items);

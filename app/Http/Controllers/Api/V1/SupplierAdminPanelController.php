@@ -1550,20 +1550,84 @@ class SupplierAdminPanelController extends Controller
     }
 
     /** Itens por pedido em batch: [order_id => [{descricao,foto,sku,qtd}...]] */
+    /**
+     * MUL-427: variantes aceitaveis de um codigo de barras.
+     *
+     * O leitor manda o que esta impresso na embalagem e o cadastro nem sempre bate:
+     * o mesmo produto e EAN-13 na caixa e GTIN-14 no ERP, e planilha de importacao
+     * come zero a esquerda. Sem isso o bip falha em produto que ESTA cadastrado.
+     */
+    private function variantesDeCodigo(string $codigo): array
+    {
+        $variantes = [$codigo];
+
+        if (ctype_digit($codigo)) {
+            $semZeros = ltrim($codigo, '0');
+            if ($semZeros !== '' && $semZeros !== $codigo) {
+                $variantes[] = $semZeros;
+            }
+            foreach ([13, 14] as $tamanho) {
+                if (strlen($codigo) < $tamanho) {
+                    $variantes[] = str_pad($codigo, $tamanho, '0', STR_PAD_LEFT);
+                }
+            }
+        }
+
+        return array_values(array_unique($variantes));
+    }
+
+    /**
+     * MUL-427: proximo pedido PRIORITARIO da fila que precisa do produto bipado.
+     *
+     * O separador bipa o produto que esta na mao, nao o pedido. A ordem e a mesma
+     * urgencia que a fila ja mostra (MUL-044): prazo de despacho = paid_at + SLA do
+     * canal (2 dias na Shopee, 3 nos demais), do mais apertado para o mais folgado.
+     * A elegibilidade e a da propria fila (nativePickingEligibleQuery), entao pedido
+     * sem etiqueta, ja enviado ou nao pago ao fornecedor nunca aparece aqui.
+     */
+    private function proximoPedidoDoProdutoBipado(int $supplierId, string $codigo)
+    {
+        $codigos = $this->variantesDeCodigo($codigo);
+
+        return $this->nativePickingEligibleQuery($supplierId)
+            ->whereHas('items', function ($i) use ($codigos) {
+                $i->where(function ($w) use ($codigos) {
+                    $w->whereIn('order_items.sku', $codigos)
+                      ->orWhereIn('order_items.variation_sku', $codigos)
+                      ->orWhereHas('product', fn ($p) => $p->whereIn('products.gtin', $codigos)
+                                                           ->orWhereIn('products.ean', $codigos));
+                });
+            })
+            ->leftJoin('tenants as t', 't.slug', '=', 'orders.tenant_slug')
+            ->leftJoin('clients as c', 'c.id', '=', 'orders.client_id')
+            ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
+            ->orderByRaw("DATE_ADD(orders.paid_at, INTERVAL (CASE WHEN orders.source = 'shopee' THEN 2 ELSE 3 END) DAY) ASC")
+            ->first(['orders.*', 't.name as store_name_join', DB::raw("COALESCE(NULLIF(u.full_name,''),u.name) as seller_name_join")]);
+    }
+
     private function nativePickingItems(array $orderIds): array
     {
         if (empty($orderIds)) return [];
-        $rows = DB::table('order_items')
-            ->whereIn('order_id', $orderIds)
-            ->orderBy('id')
-            ->get(['order_id', 'sku', 'name', 'quantity', 'product_image']);
+        // MUL-427: ean e gtin por ITEM. O payload trazia so descricao/foto/sku/qtd,
+        // enquanto a tela conferia `expectedItem.ean` -- campo que nunca chegou nela.
+        // Resultado: a validacao por codigo de barras nunca funcionou de fato; so o
+        // SKU casava. O unico ean exposto era o do nativePickingEans, que devolve UM
+        // ean por PEDIDO (o do primeiro item), e serve a outra finalidade.
+        $rows = DB::table('order_items as oi')
+            ->leftJoin('products as p', 'p.id', '=', 'oi.product_id')
+            ->whereIn('oi.order_id', $orderIds)
+            ->orderBy('oi.id')
+            ->get(['oi.order_id', 'oi.sku', 'oi.variation_sku', 'oi.name', 'oi.quantity', 'oi.product_image', 'p.ean', 'p.gtin']);
         $out = [];
         foreach ($rows as $r) {
             $out[(int) $r->order_id][] = [
-                'descricao' => $r->name,
-                'foto'      => $r->product_image,
-                'sku'       => $r->sku,
-                'qtd'       => (int) ($r->quantity ?? 1),
+                'descricao'     => $r->name,
+                'foto'          => $r->product_image,
+                'sku'           => $r->sku,
+                'variation_sku' => $r->variation_sku,
+                'ean'           => $r->ean,
+                'gtin'          => $r->gtin,
+                'qtd'           => (int) ($r->quantity ?? 1),
             ];
         }
         return $out;
@@ -1852,6 +1916,14 @@ class SupplierAdminPanelController extends Controller
             ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
             ->orderByDesc('orders.id')
             ->first(['orders.*', 't.name as store_name_join', DB::raw("COALESCE(NULLIF(u.full_name,''),u.name) as seller_name_join")]);
+
+        // MUL-427: nao casou como codigo de PEDIDO -- tenta como codigo de PRODUTO
+        // (GTIN, EAN, SKU ou SKU de variacao) e traz o proximo prioritario da fila.
+        // Antes o bip do codigo de barras do produto simplesmente dava 404, e o
+        // separador precisava achar o pedido por rastreio para so entao conferir.
+        if (!$order) {
+            $order = $this->proximoPedidoDoProdutoBipado($supplierId, $tracking);
+        }
 
         if (!$order) {
             $devolucao = Order::query()

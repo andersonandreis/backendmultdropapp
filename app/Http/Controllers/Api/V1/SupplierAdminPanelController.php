@@ -3384,6 +3384,10 @@ class SupplierAdminPanelController extends Controller
             // MUL-046 Item 5: partial=true => status partially_packed; caso contrario => shipped
             $newStatus = $isPartial ? 'partially_packed' : 'shipped';
             $updateData = ['order_processing_status' => $newStatus];
+            // MUL-419: embalar e despachar eram o MESMO evento aqui — so sobrava shipped_at,
+            // e a regua do pedido nao tinha como mostrar "embalado" separado de "enviado".
+            // Carimba tambem no parcial: o volume foi fechado do mesmo jeito.
+            $updateData['packed_at'] = now();
             if (!$isPartial) {
                 $updateData['shipped_at'] = now();
                 // MUL-093: atualizar canonical_status e status para refletir envio

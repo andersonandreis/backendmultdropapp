@@ -194,7 +194,7 @@ class OrderController extends Controller
             'marketplace_account_id',
             'bling_order_id', 'bling_order_number',
             'seller_notes', 'expedition_note',
-            'paid_at', 'shipped_at', 'delivered_at', 'cancelled_at',
+            'paid_at', 'packed_at', 'shipped_at', 'delivered_at', 'cancelled_at',
             'created_at', 'updated_at',
             // MUL-239: data real da venda (MUL-237) exposta na listagem do seller
             'marketplace_created_at',

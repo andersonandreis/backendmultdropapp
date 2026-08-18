@@ -134,6 +134,69 @@ class AuthController extends Controller
             }
         }
 
+        // MUL-422: login de SUB-USUARIO (varios acessos dentro de um mesmo seller).
+        //
+        // A tabela sub_users, o CRUD (/api/v1/sub-users) e a tela em Minha Conta existem
+        // desde a MUL-227, mas o login nunca foi ligado: o Auth::attempt acima olha so a
+        // tabela `users`. Resultado — dava pra criar o acesso e ele nao entrava, e a tabela
+        // tinha 1 linha desde que foi criada (medido em 18/08/2026).
+        //
+        // O sub-usuario autentica com a credencial DELE e opera como o seller dono:
+        // o token e emitido para o parent, que e quem tem client_id, wallet e pedidos.
+        //
+        // Duas decisoes que importam:
+        //  - nome do token e `sub-user:<id>`, e NAO 'api-token'. O anti-revenda
+        //    (User::revokeOtherPanelSessions) derruba apenas api-token/phone-auth/
+        //    extensao-live, entao o acesso do sub-usuario nao derruba a sessao do lojista
+        //    nem e derrubado por ela — que e exatamente o que se espera de multiusuario.
+        //  - o 2FA do dono NAO e cobrado aqui: quem se autenticou foi o sub-usuario, com
+        //    senha propria. O 2FA do dono continua valendo pro login do dono.
+        if (! $authOk) {
+            $sub = \App\Models\SubUser::where('email', $request->email)
+                ->where('is_active', 1)
+                ->first();
+
+            if ($sub && \Illuminate\Support\Facades\Hash::check($request->password, $sub->password)) {
+                $dono = \App\Models\User::find($sub->parent_user_id);
+
+                if (! $dono) {
+                    throw ValidationException::withMessages([
+                        'email' => ['Conta principal deste acesso nao existe mais.'],
+                    ]);
+                }
+                if ($motivoDono = $dono->motivoSemAcesso()) {
+                    return response()->json(['message' => $motivoDono], 403);
+                }
+
+                $sub->forceFill(['last_login_at' => now()])->saveQuietly();
+
+                \Illuminate\Support\Facades\Log::info('[MUL-422] login de sub-usuario', [
+                    'sub_user_id' => $sub->id,
+                    'email'       => $sub->email,
+                    'parent_id'   => $dono->id,
+                ]);
+
+                $tokenSub = $dono->createToken('sub-user:' . $sub->id)->plainTextToken;
+
+                return response()->json([
+                    'token'      => $tokenSub,
+                    'token_type' => 'Bearer',
+                    'user'       => [
+                        'id'    => $dono->id,
+                        'name'  => $sub->name ?: $dono->name,
+                        'email' => $dono->email,
+                        'role'  => $dono->role,
+                        // o front pode mostrar quem de fato entrou
+                        'sub_user'       => true,
+                        'sub_user_email' => $sub->email,
+                    ],
+                ])->header(
+                    'Set-Cookie',
+                    config('app.session_cookie_name', 'app_token') . '=' . rawurlencode($tokenSub) . '; Max-Age=2592000; Path=/; Domain=' . config('app.session_cookie_domain', '') . '; Secure; HttpOnly; SameSite=Lax'
+                );
+            }
+        }
+
         if (! $authOk) {
             throw ValidationException::withMessages([
                 'email' => ['Credenciais invalidas.'],

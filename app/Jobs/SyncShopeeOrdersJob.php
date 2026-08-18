@@ -178,28 +178,45 @@ $existing = Order::where('client_id', $account->client_id)
                 // o status so AVANCA, nunca volta. Assim a Shopee consegue nos contar que
                 // enviou (ou cancelou), e um payload atrasado nao rebaixa um pedido que ja
                 // seguiu adiante.
-                if ($this->rankStatus($novoStatus) <= $this->rankStatus($existing->canonical_status ?: $existing->status)) {
+                $avancou = $this->rankStatus($novoStatus) > $this->rankStatus($existing->canonical_status ?: $existing->status);
+
+                // MUL-424b: rastreio e transportadora NAO dependem do status avancar -- a
+                // Shopee costuma emitir o codigo com o pedido ainda em "a enviar". Barrar
+                // isso junto com o status faria a correcao do congelamento custar o dado
+                // de logistica, que e o que o separador usa na etiqueta.
+                $mudancas = [];
+
+                $novoRastreio = $rawOrder['tracking_no'] ?? null;
+                if ($novoRastreio && $novoRastreio !== $existing->tracking_number) {
+                    $mudancas['tracking_number'] = $novoRastreio;
+                }
+
+                $novaTransportadora = $rawOrder['package_list'][0]['shipping_carrier'] ?? $rawOrder['shipping_carrier'] ?? null;
+                if ($novaTransportadora && $novaTransportadora !== $existing->carrier_name) {
+                    $mudancas['carrier_name'] = $novaTransportadora;
+                }
+
+                if ($avancou) {
+                    $mudancas['status']           = $novoStatus;
+                    $mudancas['canonical_status'] = $novoStatus;
+
+                    // MUL-424: nenhum caminho de marketplace escrevia shipped_at (so o
+                    // legado e o despacho manual), entao jaFoiEnviado() e os relatorios de
+                    // expedicao nao enxergavam o envio feito na propria Shopee. E o
+                    // instante em que ficamos sabendo, nao o do despacho -- a Shopee nao
+                    // manda essa hora na listagem, e a hora real de saida esta no rastreio.
+                    if (in_array($novoStatus, ['shipped', 'delivered', 'completed'], true) && ! $existing->shipped_at) {
+                        $mudancas['shipped_at'] = now();
+                    }
+                }
+
+                // Nada mudou: nao gasta escrita nem acorda o observer.
+                if (! $mudancas) {
                     $skipped++;
                     continue;
                 }
 
-                $mudancas = [
-                    'status'           => $novoStatus,
-                    'canonical_status' => $novoStatus,
-                    'tracking_number'  => $rawOrder['tracking_no'] ?? $existing->tracking_number,
-                    'carrier_name'     => $rawOrder['package_list'][0]['shipping_carrier'] ?? $rawOrder['shipping_carrier'] ?? $existing->carrier_name,
-                    'updated_at'       => now(),
-                ];
-
-                // MUL-424: nenhum caminho de marketplace escrevia shipped_at (so o legado e
-                // o despacho manual), entao jaFoiEnviado() e os relatorios de expedicao nao
-                // enxergavam o envio feito na propria Shopee. E o instante em que ficamos
-                // sabendo, nao o do despacho -- a Shopee nao manda essa hora na listagem, e
-                // a hora real de saida continua no rastreio.
-                if (in_array($novoStatus, ['shipped', 'delivered', 'completed'], true) && ! $existing->shipped_at) {
-                    $mudancas['shipped_at'] = now();
-                }
-
+                $mudancas['updated_at'] = now();
                 $existing->update($mudancas);
                 $updated++;
             } else {

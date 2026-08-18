@@ -2020,9 +2020,12 @@ class SupplierAdminPanelController extends Controller
         $fromStatus = null;
         if ($order) {
             $fromStatus = $order->order_processing_status;
+            // MUL-432: mesma regra do packingComplete -- despachar no painel significa
+            // volume fechado e pronto para coleta, nao pedido em transito. O "enviado"
+            // continua vindo do marketplace, via sync (MUL-424).
             $order->update([
-                'order_processing_status' => 'shipped',
-                'shipped_at'              => now()->toDateTimeString(),
+                'order_processing_status' => 'awaiting_shipment',
+                'packed_at'               => $order->packed_at ?: now(),
             ]);
 
             // Gravar historico auditavel (MES-046-B)
@@ -3450,11 +3453,23 @@ class SupplierAdminPanelController extends Controller
             $this->assertPaymentConfirmed($order);
         }
 
-        $alreadyShipped = in_array($order->order_processing_status, ['shipped', 'partially_packed']);
+        // MUL-432: 'awaiting_shipment' entrou na lista -- e o estado de EMBALADO, e
+        // reembalar o mesmo pedido nao pode carimbar tudo de novo.
+        $alreadyShipped = in_array($order->order_processing_status, ['awaiting_shipment', 'shipped', 'partially_packed']);
 
         if (!$alreadyShipped) {
-            // MUL-046 Item 5: partial=true => status partially_packed; caso contrario => shipped
-            $newStatus = $isPartial ? 'partially_packed' : 'shipped';
+            // MUL-432: fechar o volume NAO e enviar.
+            //
+            // O bip e a impressao da etiqueta dizem que o pedido foi EMBALADO. Quem diz
+            // "enviado" e o marketplace, quando manda o evento de coleta -- e e esse que
+            // o painel mostra como "Em transito". Antes o packing marcava
+            // canonical_status/status = shipped e shipped_at na hora do bip: o pedido
+            // aparecia como enviado antes de qualquer transportadora encostar nele, e
+            // quando o evento real chegava nao havia mais o que atualizar.
+            //
+            // Agora o marketplace tem quem escute: o sync aprende SHIPPED e carimba
+            // shipped_at (MUL-424). Aqui fica so o que de fato aconteceu no galpao.
+            $newStatus = $isPartial ? 'partially_packed' : 'awaiting_shipment';
             $updateData = ['order_processing_status' => $newStatus];
             // MUL-419: embalar e despachar eram o MESMO evento aqui — so sobrava shipped_at,
             // e a regua do pedido nao tinha como mostrar "embalado" separado de "enviado".
@@ -3468,13 +3483,10 @@ class SupplierAdminPanelController extends Controller
             if (!$order->separated_at) {
                 $updateData['separated_at'] = now();
             }
-            if (!$isPartial) {
-                $updateData['shipped_at'] = now();
-                // MUL-093: atualizar canonical_status e status para refletir envio
-                // sem isso, filtro "Enviado" do lojista nao encontra o pedido
-                $updateData['canonical_status'] = 'shipped';
-                $updateData['status']           = 'shipped';
-            }
+            // MUL-432: shipped_at, canonical_status e status NAO sao mais escritos aqui.
+            // A MUL-093 os carimbava para o filtro "Enviado" do lojista achar o pedido --
+            // mas isso resolvia a listagem mentindo sobre o estado real. O filtro certo
+            // para este momento e "embalado / aguardando coleta".
             $order->update($updateData);
 
             // FIX 4: chamar bridge op=ship para atualizar legado via picking_packing.php.
@@ -3533,6 +3545,9 @@ class SupplierAdminPanelController extends Controller
         return response()->json(['data' => [
             'order_id'                => $order->id,
             'order_processing_status' => $order->order_processing_status,
+            // MUL-432: packed_at e o que este endpoint de fato carimba. shipped_at vem
+            // do marketplace e continua aqui so para quem ja o tinha -- normalmente null.
+            'packed_at'               => $order->packed_at,
             'shipped_at'              => $order->shipped_at,
             'nfe_status'              => $nfeStatus,
             'already_shipped'         => $alreadyShipped,

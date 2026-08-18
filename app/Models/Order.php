@@ -340,7 +340,12 @@ class Order extends Model
      */
     public function scopeReadyToShip($q)
     {
-        return $q->where('orders.is_draft', false)
+        // MUL-432: pedido ja embalado sai da fila de separacao. Antes quem tirava era o
+        // shipped_at, carimbado pelo proprio painel no bip; agora que o painel so
+        // carimba packed_at (e o shipped_at vem do marketplace), sem este corte o
+        // pedido embalado voltaria para a fila e seria separado de novo.
+        return $q->whereNull('orders.packed_at')
+            ->where('orders.is_draft', false)
             ->whereNotNull('orders.label_url')->where('orders.label_url', '<>', '')
             ->whereNull('orders.shipped_at')
             ->whereNotNull('orders.paid_at')

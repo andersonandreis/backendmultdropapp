@@ -114,6 +114,21 @@ class SyncMLOrdersJob implements ShouldQueue
             $buyer       = $rawOrder['buyer'] ?? [];
             $totalAmount = $rawOrder['total_amount'] ?? 0;
 
+            // MUL-423: o payload da BUSCA ja traz shipping.id e date_created, e os dois
+            // eram descartados aqui. Consequencia medida em 18/08/2026: 23 dos 40 pedidos
+            // de ML sem external_shipping_id -- e o agendamento de etiqueta (MUL-205, nos
+            // dois ramos abaixo) exige exatamente esse campo, entao ele nunca rodava para
+            // pedido nascido do sync, so para os que chegavam pelo webhook.
+            // A conversao de fuso repete a convencao do WebhookOrderService (FOR-119):
+            // sem setTimezone a data fica 3h a frente e o painel mostra o pedido pago
+            // antes de existir.
+            $shippingIdMkt = ! empty(($rawOrder['shipping'] ?? [])['id'])
+                ? (string) $rawOrder['shipping']['id']
+                : null;
+            $criadoNoMkt = ! empty($rawOrder['date_created'])
+                ? \Carbon\Carbon::parse($rawOrder['date_created'])->setTimezone(config('app.timezone'))
+                : null;
+
 
             // MUL-091: NOV-158 — importar apenas pedidos em aberto.
             // Skip pedidos ja enviados/finalizados/cancelados — nao precisam de acao.
@@ -142,6 +157,17 @@ class SyncMLOrdersJob implements ShouldQueue
                     'canonical_status' => $localStatus,
                     'updated_at'       => now(),
                 ];
+
+                // MUL-423: pedido que nasceu sem esses campos se conserta aqui, no proximo
+                // sync horario -- sem script de backfill e sem rotina nova. So preenche o
+                // que esta vazio: dado ja gravado (ex.: vindo do webhook, que e mais
+                // completo) nunca e sobrescrito.
+                if (! $existing->external_shipping_id && $shippingIdMkt) {
+                    $updates['external_shipping_id'] = $shippingIdMkt;
+                }
+                if (! $existing->marketplace_created_at && $criadoNoMkt) {
+                    $updates['marketplace_created_at'] = $criadoNoMkt;
+                }
                 // MUL-204: persistir shipping.status pra distinguir handling (adiada) de ready_to_ship
                 $mappedShipping = $shippingStatus ? $this->mapMLShippingStatus($shippingStatus) : null;
                 if ($mappedShipping !== null) {
@@ -217,6 +243,9 @@ class SyncMLOrdersJob implements ShouldQueue
                     'subtotal'               => $totalAmount,
                     'total'                  => $totalAmount,
                     'currency'               => $rawOrder['currency_id'] ?? 'BRL',
+                    // MUL-423: ver o bloco no inicio do loop
+                    'external_shipping_id'   => $shippingIdMkt,
+                    'marketplace_created_at' => $criadoNoMkt,
                     'buyer_id'               => (string) ($buyer['id'] ?? ''),
                     'buyer_username'         => $buyer['nickname'] ?? null,
                     'customer_name'          => trim(($buyer['first_name'] ?? '') . ' ' . ($buyer['last_name'] ?? '')),
@@ -271,6 +300,18 @@ class SyncMLOrdersJob implements ShouldQueue
                         'promoted' => $wasPromoted,
                         'missing'  => $missing,
                     ]);
+
+                    // MUL-423: o endpoint de BUSCA nao devolve buyer.first_name/last_name
+                    // (traz so id e nickname), entao TODO pedido de ML nasce sem
+                    // customer_name, o DraftOrderPromoter o mantem rascunho, e rascunho
+                    // nao aparece no painel do seller. O GET /orders/{id} DEVOLVE o nome
+                    // (conferido ao vivo em 18/08/2026), e quem chama esse endpoint e o
+                    // EnrichMercadoLivreOrderJob. Em vez de esperar o cron de 15min mais o
+                    // cooldown de 30min por pedido, despacha o MESMO job agora. Nao e
+                    // processo novo: e o caminho que ja existe, sem a espera.
+                    if (! $wasPromoted && in_array('customer_name', $missing, true)) {
+                        \App\Jobs\EnrichMercadoLivreOrderJob::dispatch($order->id)->onQueue('default');
+                    }
                 } catch (\Throwable $e) {
                     Log::warning('[SyncMLOrdersJob] promote na criacao falhou', [
                         'order_id' => $order->id,

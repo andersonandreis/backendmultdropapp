@@ -163,6 +163,18 @@ class EnrichMercadoLivreOrderJob implements ShouldQueue
             $updates['subtotal'] = $total;
         }
 
+        // Envio e data da venda (MUL-423): o detalhe traz shipping.id e date_created.
+        // Sem o shipping.id o agendamento de etiqueta (MUL-205) nao tem o que consultar.
+        if (empty($order->external_shipping_id) && ! empty($detail['shipping']['id'])) {
+            $updates['external_shipping_id'] = (string) $detail['shipping']['id'];
+        }
+        if (! $order->marketplace_created_at && ! empty($detail['date_created'])) {
+            try {
+                $updates['marketplace_created_at'] = Carbon::parse($detail['date_created'])
+                    ->setTimezone(config('app.timezone'));
+            } catch (\Throwable) { /* ignora */ }
+        }
+
         // Pagamento
         if (! $order->paid_at && ! empty($detail['date_closed'])) {
             try {

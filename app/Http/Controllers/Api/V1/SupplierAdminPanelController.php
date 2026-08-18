@@ -688,6 +688,19 @@ class SupplierAdminPanelController extends Controller
                 'payment_external_id'    => $o->payment_external_id,
                 'payment_method'         => $o->payment_method,
                 'payment_gateway'        => $o->payment_gateway,
+                // MUL-433: a regua do pedido tem as etapas "separado" e "embalado", mas
+                // esta resposta nunca mandou os carimbos. O painel do SELLER (/orders)
+                // manda desde a MUL-419, entao a mesma venda aparecia com a etapa acesa
+                // de um lado e apagada do outro -- foi assim que a divergencia entre os
+                // dois paineis apareceu na operacao.
+                'separated_at'           => $o->separated_at,
+                'packed_at'              => $o->packed_at,
+                // MUL-433b: a LISTA nao mandava nenhum campo de NF de entrada, entao a
+                // etapa "NF Entrada" da regua ficava apagada aqui mesmo quando a nota
+                // existia -- e no painel do seller, que recebe os campos, aparecia acesa.
+                'nfe_entrada_status'     => $o->nfe_entrada_status,
+                'nfe_entrada_number'     => $o->nfe_entrada_number,
+                'nfe_entrada_access_key' => $o->nfe_entrada_access_key,
                 'shipped_at'             => $o->shipped_at,
                 'delivered_at'           => $o->delivered_at,
                 'tracking_number'        => $o->tracking_number,
@@ -808,6 +821,9 @@ class SupplierAdminPanelController extends Controller
                         ->orderByDesc('id')->first();
                     return $fc ? ['id' => $fc->id, 'amount' => (float) $fc->amount, 'paid_at' => $fc->paid_at] : null;
                 })(),
+                // MUL-433: mesmos carimbos no detalhe (ver comentario na lista).
+                'separated_at'            => $order->separated_at,
+                'packed_at'               => $order->packed_at,
                 'shipped_at'              => $order->shipped_at,
                 'delivered_at'            => $order->delivered_at,
                 'cancelled_at'            => $order->cancelled_at,
@@ -824,6 +840,9 @@ class SupplierAdminPanelController extends Controller
                 'nfe_entrada_pdf_url'     => $order->nfe_entrada_pdf_url ?? null,
                 'nfe_entrada_xml_url'     => $order->nfe_entrada_xml_url ?? null,
                 'nfe_entrada_number'      => $order->nfe_entrada_number ?? null,
+                // MUL-433b: a chave e o que prova que a nota existe quando o status
+                // ainda nao avancou (o webhook do Bling esta parado ha dias).
+                'nfe_entrada_access_key'  => $order->nfe_entrada_access_key ?? null,
                 'bling_pedido_id'         => $order->bling_pedido_id ?? null,
                 'nfe_entrada_status'      => $order->nfe_entrada_status ?? null,
                 'shopee_package_number'   => $order->shopee_package_number ?? null,

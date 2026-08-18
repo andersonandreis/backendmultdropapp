@@ -144,7 +144,12 @@ class PlanController extends Controller
 
         $subscription = $client->subscriptions()
             ->with([
-                'plan:id,name,slug,max_skus,max_marketplace_connections,price_monthly,price_yearly',
+                // MUL-420: max_connections_per_platform e max_erp_connections faltavam nesta lista,
+                // entao o painel do lojista recebia o plano sem limite por plataforma e caia no
+                // default de 999 — mostrava infinito em todo card enquanto o backend barrava a
+                // conexao no retorno do OAuth. O lojista so descobria o teto depois de autorizar
+                // no marketplace.
+                'plan:id,name,slug,max_skus,max_marketplace_connections,max_erp_connections,max_connections_per_platform,price_monthly,price_yearly',
             ])
             ->latest()
             ->first();

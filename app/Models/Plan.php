@@ -26,6 +26,9 @@ class Plan extends Model
     protected $casts = [
         'has_drop_internacional' => 'boolean',
         'is_active'              => 'boolean',
+        // MUL-420: sem este cast o campo saia como STRING JSON no payload, e o painel
+        // (que faz hasOwnProperty no objeto) nunca enxergava o limite por plataforma.
+        'max_connections_per_platform' => 'array',
     ];
 
     protected static function booted(): void

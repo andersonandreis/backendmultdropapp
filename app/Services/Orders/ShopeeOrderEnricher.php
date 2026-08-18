@@ -170,8 +170,11 @@ class ShopeeOrderEnricher
         }
 
         // MUL-237: preencher marketplace_created_at se NULL
-        if (empty($order->marketplace_created_at) && ! empty($detail[create_time])) {
-            $updates[marketplace_created_at] = Carbon::createFromTimestamp((int) $detail[create_time])->setTimezone(config('app.timezone'));
+        // MUL-379: as chaves estavam SEM ASPAS ($detail[create_time]) — constante
+        // indefinida, que em PHP 8 e Error em runtime, nao warning. O php -l passa.
+        if (empty($order->marketplace_created_at) && ! empty($detail['create_time'])) {
+            $updates['marketplace_created_at'] = Carbon::createFromTimestamp((int) $detail['create_time'])
+                ->setTimezone(config('app.timezone'));
         }
 
         if (! empty($updates)) {

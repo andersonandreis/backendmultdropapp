@@ -45,9 +45,12 @@ class AuditUnpaidOrdersJob implements ShouldQueue
 
         $orders = Order::whereNull('wallet_paid_at')
             ->whereRaw('IFNULL(supplier_total, 0) > 0')
+            // MUL-379: shipped/delivered/completed SAIRAM daqui. Pedido enviado sem
+            // pagamento e pedido que o lojista despachou por conta propria — virar
+            // 'shipped_debt' cobraria produto que nunca foi nosso. O job segue
+            // desligado por padrao (MES-048), mas nao pode nascer errado se ligarem.
             ->whereIn('canonical_status', [
                 'paid', 'accepted', 'in_fulfillment',
-                'shipped', 'delivered', 'completed',
             ])
             ->whereNotNull('supplier_id')
             // MUL-269 fase 2: clients.company_name foi removido; nome vem do user via accessor.

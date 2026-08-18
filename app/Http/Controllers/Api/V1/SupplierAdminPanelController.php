@@ -1602,7 +1602,25 @@ class SupplierAdminPanelController extends Controller
         }
         $queue = array_values($queue);
 
-        return response()->json(['data' => ['queue' => $queue, 'count' => count($queue), 'err' => null]]);
+        // MUL-379: 'count' sempre foi o tamanho DESTA pagina (apos limit e filtros),
+        // e a tela mostrava esse numero como se fosse o total — dai a divergencia que o
+        // Ruan viu: painel do fornecedor 57 x telas do admin 86. Os 29 de diferenca sao
+        // pedidos com etiqueta que o lojista ainda nao pagou, barrados pelo corte da
+        // MUL-255 (fornecedor nao despacha antes de receber). Agora a fila diz os tres
+        // numeros e a tela pode explicar a diferenca em vez de esconde-la.
+        $baseFila = fn () => Order::query()->readyToShip()
+            ->where('orders.supplier_id', $this->supplierId())
+            ->where('orders.paid_at', '>=', '2026-01-01');
+
+        return response()->json(['data' => [
+            'queue' => $queue,
+            'count' => count($queue),
+            // total elegivel (sem o limit da pagina nem os filtros de tela)
+            'total' => (clone $baseFila())->whereNotNull('orders.wallet_paid_at')->count(),
+            // trabalho que existe mas esta travado esperando o lojista pagar
+            'aguardando_pagamento' => (clone $baseFila())->whereNull('orders.wallet_paid_at')->count(),
+            'err' => null,
+        ]]);
     }
 
     /** GET /api/v1/supplier-admin/picking/separacao — Lista de separacao agrupada por SKU */

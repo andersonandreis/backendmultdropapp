@@ -843,3 +843,12 @@ Schedule::command("tiktok:heal-kalodata")->hourly()->withoutOverlapping(); // SE
     ->withoutOverlapping()
     ->name('analytics-cleanup')
     ->appendOutputTo(storage_path('logs/analytics-cleanup.log'));
+
+// MUL-379: a transportadora da Shopee so existe depois que a logistica e definida, e a
+// essa altura o pedido ja saiu do estado rascunho — o ShopeeOrderEnricher nao roda mais
+// nele (`if (! $order->is_draft) return not_draft`). Sem isto, carrier_name fica nulo pra
+// sempre e o separador nao consegue agrupar volumes por transportadora (59 de 83 pedidos
+// da fila estavam assim em 17/08/2026). Roda de 15 em 15 min, so sobre a fila.
+Schedule::command("orders:backfill-carrier --limit=200")
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();

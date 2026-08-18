@@ -1374,6 +1374,15 @@ class OrderController extends Controller
             if (! $wlOrder) {
                 return response()->json(['error' => 'order_not_found'], 404);
             }
+            // MUL-379: pedido ja enviado nao se cobra (ver Order::jaFoiEnviado).
+            // Guard ANTES do proxy pro hub — senao o hub gera PIX de pedido que
+            // o proprio lojista despachou.
+            if ($wlOrder->jaFoiEnviado() && $wlOrder->wallet_paid_at === null) {
+                return response()->json([
+                    'error'   => 'order_already_shipped',
+                    'message' => 'Este pedido ja foi enviado. Pedido enviado pelo lojista nao gera cobranca.',
+                ], 422);
+            }
             // MUL-366: pagamento com SALDO e LOCAL — a wallet do seller vive neste
             // backend (regra 33; NOV-214 zerou os bolsos do hub, entao proxyar
             // 'balance' pro hub acharia saldo R$ 0 e geraria PIX indevido).
@@ -1414,6 +1423,14 @@ class OrderController extends Controller
             ->where('client_id', $client->id)
             ->whereNull('wallet_paid_at') // FOR-039: paid_at ML ja preenchido; filtrar por custo fornecedor
             ->firstOrFail();
+
+        // MUL-379: mesma regra do caminho WL, para quem cai direto no fluxo local.
+        if ($order->jaFoiEnviado()) {
+            return response()->json([
+                'error'   => 'order_already_shipped',
+                'message' => 'Este pedido ja foi enviado. Pedido enviado pelo lojista nao gera cobranca.',
+            ], 422);
+        }
 
         $supplier = $order->supplier;
         if (! $supplier) {

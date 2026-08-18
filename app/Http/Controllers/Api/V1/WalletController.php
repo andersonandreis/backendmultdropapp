@@ -300,6 +300,19 @@ class WalletController extends Controller
             ], 422);
         }
 
+        // MUL-379: pedido ja enviado sai da cobranca (Order::jaFoiEnviado). Recusa o
+        // lote inteiro dizendo QUAIS sao, em vez de cobrar os outros em silencio: o
+        // lojista escolheu aqueles pedidos e precisa ver o que mudou.
+        $enviados = $orders->filter(fn ($o) => $o->jaFoiEnviado());
+        if ($enviados->isNotEmpty()) {
+            return response()->json([
+                'error'     => 'orders_already_shipped',
+                'message'   => 'Pedido ja enviado nao gera cobranca. Remova da selecao: '
+                    . $enviados->pluck('order_number')->implode(', '),
+                'order_ids' => $enviados->pluck('id')->values(),
+            ], 422);
+        }
+
         $total = round($orders->sum('supplier_total'), 2);
 
         return DB::transaction(function () use ($client, $supplier, $orders, $total) {
@@ -463,6 +476,19 @@ class WalletController extends Controller
             return response()->json([
                 'error'   => 'invalid_orders',
                 'message' => 'Um ou mais pedidos nao foram encontrados, ja foram pagos ou nao pertencem a este lojista/fornecedor.',
+            ], 422);
+        }
+
+        // MUL-379: pedido ja enviado sai da cobranca (Order::jaFoiEnviado). Recusa o
+        // lote inteiro dizendo QUAIS sao, em vez de cobrar os outros em silencio: o
+        // lojista escolheu aqueles pedidos e precisa ver o que mudou.
+        $enviados = $orders->filter(fn ($o) => $o->jaFoiEnviado());
+        if ($enviados->isNotEmpty()) {
+            return response()->json([
+                'error'     => 'orders_already_shipped',
+                'message'   => 'Pedido ja enviado nao gera cobranca. Remova da selecao: '
+                    . $enviados->pluck('order_number')->implode(', '),
+                'order_ids' => $enviados->pluck('id')->values(),
             ], 422);
         }
 

@@ -345,4 +345,21 @@ class Order extends Model
             ->whereNull('orders.blocked_at')
             ->whereIn('orders.canonical_status', ['paid', 'processing']);
     }
+
+    /**
+     * MUL-379: pedido que ja foi embora — nao se cobra mais por ele.
+     *
+     * Regra do Ruan (17/08/2026): se o pedido foi enviado, o lojista despachou com
+     * estoque proprio e o produto nunca foi nosso. Nao ha o que cobrar nem transacao
+     * a registrar. Medido no dia: dos 284 enviados e nao pagos, 283 nunca passaram
+     * pelo nosso picking (sem bip, sem impressao, order_processing_status intocado).
+     *
+     * shipped_at sozinho nao basta — 278 pedidos ja entregues estao com ele nulo
+     * (importacao antiga nao preencheu), entao canonical_status entra junto.
+     */
+    public function jaFoiEnviado(): bool
+    {
+        return $this->shipped_at !== null
+            || in_array($this->canonical_status, ['shipped', 'delivered', 'completed'], true);
+    }
 }

@@ -3370,13 +3370,25 @@ class SupplierAdminPanelController extends Controller
             'outros'       => ['label' => 'Outros',        'color' => '#6b7a99'],
         ];
 
+        // MUL-446: conta por packed_at, o carimbo de EMBALADO.
+        //
+        // Este painel media 'order_processing_status = shipped' com 'shipped_at' de
+        // hoje. Funcionava enquanto o bip carimbava as duas coisas -- mas a MUL-432
+        // separou os dois eventos: embalar e o galpao fechando o volume, enviar e o
+        // marketplace mandando o evento de coleta. Desde entao o bip grava packed_at e
+        // 'awaiting_shipment', e nunca mais shipped_at. O contador ficou preso no
+        // criterio antigo e passou a marcar zero o dia inteiro: em 19/08/2026 havia 52
+        // pedidos embalados no galpao e o painel mostrava 0.
+        //
+        // Sem filtro de status de proposito. packed_at so e escrito no packing, entao
+        // ele ja e a resposta -- e assim o numero nao volta a quebrar quando o pedido
+        // avancar para enviado/entregue mais tarde no mesmo dia.
         $rows = DB::table('orders')
-            ->select('id', 'order_number', 'external_order_id', 'channel_name', 'source', 'shipped_at', 'customer_name')
+            ->select('id', 'order_number', 'external_order_id', 'channel_name', 'source', 'packed_at', 'shipped_at', 'customer_name')
             ->where('supplier_id', $supplierId)
             ->where('is_draft', 0) // MUL-197: rascunho fora do painel de embalados
-            ->where('order_processing_status', 'shipped')
-            ->whereBetween('shipped_at', [$todayStart, $todayEnd])
-            ->orderByDesc('shipped_at')
+            ->whereBetween('packed_at', [$todayStart, $todayEnd])
+            ->orderByDesc('packed_at')
             ->limit(200)
             ->get();
 
@@ -3391,6 +3403,9 @@ class SupplierAdminPanelController extends Controller
                     'order_number'      => $o->order_number,
                     'external_order_id' => $o->external_order_id,
                     'customer_name'     => $o->customer_name,
+                    // MUL-446: a hora que aparece na lista e a do embalo, que e o que
+                    // este painel mede. shipped_at segue junto para quem quiser cruzar.
+                    'packed_at'         => $o->packed_at,
                     'shipped_at'        => $o->shipped_at,
                 ];
             }

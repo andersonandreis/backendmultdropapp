@@ -510,6 +510,38 @@ class EtiquetaCombinadaImagem
         $canvas->drawImage($d);
     }
 
+    /**
+     * MUL-447: traz a etiqueta do hub para o storage local.
+     *
+     * Mesmo caminho do proxy autenticado (MUL-244/MUL-359): o hub e a fonte, e o
+     * arquivo fica cacheado em labels/ -- entao a proxima leitura, inclusive a do
+     * proprio proxy, ja acha aqui.
+     */
+    private function buscarNoHub(string $rel): bool
+    {
+        $hub = rtrim((string) config('services.hubai_federation.storage_url', 'https://api.hubai.io'), '/');
+
+        try {
+            $res = \Illuminate\Support\Facades\Http::timeout(30)->connectTimeout(10)
+                ->withHeaders([
+                    'X-Federation-Tenant' => (string) config('app.tenant'),
+                    'X-Federation-Secret' => (string) (config('services.hubai_federation.secret') ?: env('FEDERATION_HMAC_SECRET', '')),
+                ])->get($hub . '/storage/' . $rel);
+        } catch (\Throwable $e) {
+            Log::warning('[MUL-447] hub nao respondeu pela etiqueta: ' . $e->getMessage(), ['arquivo' => $rel]);
+
+            return false;
+        }
+
+        if (! $res->successful()) {
+            return false;
+        }
+
+        Storage::disk('public')->put($rel, $res->body());
+
+        return true;
+    }
+
     /** Foto do SKU pai: caminho local, data URI ou URL remota. */
     private function baixarImagem(?string $url): ?string
     {
@@ -559,6 +591,22 @@ class EtiquetaCombinadaImagem
 
         $rel  = ltrim(substr($url, 9), '/');
         $disk = Storage::disk('public');
+
+        // MUL-447: nem toda etiqueta esta em disco AQUI. Quem baixa do marketplace
+        // costuma ser o hub, e esta WL serve o arquivo por proxy -- em 19/08/2026 o
+        // hub tinha 223 etiquetas em disco contra 49 no multdrop. Sem este passo a
+        // combinada so existia para a fatia baixada localmente: no preview do admin
+        // e na impressao, todo o resto caia na etiqueta crua do marketplace.
+        if (! $disk->exists($rel)) {
+            // MUL-359: etiqueta antiga foi movida para o privado. Usa direto, sem
+            // republicar -- so precisa ler os bytes para compor a imagem.
+            if (Storage::disk('local')->exists($rel)) {
+                return Storage::disk('local')->path($rel);
+            }
+            if (! $this->buscarNoHub($rel)) {
+                return null;
+            }
+        }
 
         if (preg_match('/\.(png|jpe?g)$/i', $rel)) {
             $recortada = $this->renderer->trimmedImageToUrl($rel);

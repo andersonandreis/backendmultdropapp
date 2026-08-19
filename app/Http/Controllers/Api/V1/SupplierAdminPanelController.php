@@ -4674,6 +4674,42 @@ class SupplierAdminPanelController extends Controller
     }
 
     /**
+     * GET /api/v1/supplier-admin/orders/{orderId}/combined-label-image
+     *
+     * MUL-445: mesma etiqueta combinada, so que ja RENDERIZADA como PNG pelo
+     * servidor. Existe porque o QZ Tray nao da conta de imprimir HTML: a chamada
+     * com `format: html` fica pendurada sem resolver e trava a fila da impressora
+     * (MUL-442, bancada, 19/08/2026). Imagem e o formato que sempre funcionou.
+     *
+     * Devolve JSON com a URL absoluta -- o painel repassa direto ao qzPrintLabel.
+     */
+    public function combinedLabelImage(Request $request, int $orderId, \App\Services\Labels\EtiquetaCombinadaImagem $servico): \Illuminate\Http\JsonResponse
+    {
+        $this->requireSupplierAdmin($request);
+
+        $order = Order::where("supplier_id", $this->supplierId())
+            ->where("id", $orderId)
+            ->with("items.product")
+            ->firstOrFail();
+
+        $url = $servico->gerar($order);
+
+        if (! $url) {
+            return response()->json([
+                "success" => false,
+                "message" => "Pedido sem etiqueta do marketplace disponivel.",
+            ], 422);
+        }
+
+        return response()->json([
+            "success" => true,
+            // URL relativa de proposito: e assim que o painel reconhece a etiqueta e
+            // a busca pelo proxy autenticado, igual faz com label_url (MUL-445b).
+            "data"    => ["url" => $url],
+        ]);
+    }
+
+    /**
      * POST /api/v1/supplier-admin/picking/print-batch-combined
      *
      * Recebe order_ids[], retorna HTML unico com N etiquetas combinadas

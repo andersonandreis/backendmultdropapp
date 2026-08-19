@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multdrop — Manual de integração com o Bling</title>
+<style>
+  :root { --amarelo:#ffae0d; --grafite:#292a2d; --texto:#2b2d31; --borda:#e6e8eb; --fundo:#fff; --suave:#f7f8fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; color:var(--texto); background:var(--fundo); }
+  header { background:var(--grafite); color:#fff; padding:32px 24px; }
+  .wrap { max-width:820px; margin:0 auto; padding:0 24px; }
+  header .wrap { padding:0; }
+  header h1 { margin:0 0 6px; font-size:26px; }
+  header p { margin:0; opacity:.75; font-size:15px; }
+  main { padding:36px 0 64px; }
+  h2 { font-size:20px; margin:36px 0 12px; padding-bottom:8px; border-bottom:2px solid var(--amarelo); }
+  h3 { font-size:16px; margin:24px 0 8px; }
+  ol,ul { padding-left:22px; }
+  li { margin:6px 0; }
+  code { background:var(--suave); padding:2px 6px; border-radius:4px; font-size:14px; }
+  table { border-collapse:collapse; width:100%; margin:14px 0; font-size:15px; }
+  th,td { border:1px solid var(--borda); padding:9px 11px; text-align:left; vertical-align:top; }
+  th { background:var(--suave); font-weight:600; }
+  .aviso { background:#fff8e8; border-left:4px solid var(--amarelo); padding:12px 16px; margin:16px 0; border-radius:0 6px 6px 0; }
+  footer { border-top:1px solid var(--borda); padding:24px 0; font-size:14px; color:#6b7280; }
+  a { color:#0b6bcb; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Multdrop — Manual de integração com o Bling</h1>
+    <p>Como conectar sua conta Bling à plataforma Multdrop</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+<h2>O que é o Multdrop</h2>
+<p>
+  O Multdrop é uma plataforma de gestão para lojistas que vendem em marketplaces. Ele centraliza
+  catálogo de produtos, pedidos, estoque e faturamento em um único painel. A integração com o Bling
+  permite que os pedidos recebidos nos marketplaces sejam enviados automaticamente ao seu Bling para
+  emissão de nota fiscal e controle de estoque, sem digitação manual.
+</p>
+
+<h2>Antes de começar</h2>
+<ul>
+  <li>Ter uma conta ativa no Bling com plano que inclua acesso à API v3.</li>
+  <li>Ter uma conta no Multdrop em <a href="https://multdrop.app">multdrop.app</a>.</li>
+  <li>Ser administrador da conta Bling que será conectada.</li>
+</ul>
+
+<h2>Passos no Bling</h2>
+<ol>
+  <li>Acesse sua conta em <a href="https://www.bling.com.br">bling.com.br</a>.</li>
+  <li>Abra a <strong>Central de Extensões</strong> no menu superior.</li>
+  <li>Pesquise por <strong>Multdrop</strong>.</li>
+  <li>Clique em <strong>Instalar</strong>.</li>
+  <li>Revise a lista de permissões solicitadas e confirme a autorização.</li>
+  <li>Você será redirecionado de volta ao painel do Multdrop com a conexão concluída.</li>
+</ol>
+
+<div class="aviso">
+  <strong>Se os códigos de acesso expirarem:</strong> abra a Central de Extensões &rarr;
+  <em>Minhas instalações</em>, localize o Multdrop e use a opção <em>Reautenticar</em>.
+  Nenhum dado é perdido nesse processo.
+</div>
+
+<h2>Passos no Multdrop</h2>
+<ol>
+  <li>Entre em <a href="https://multdrop.app">multdrop.app</a> com seu usuário.</li>
+  <li>Abra o menu <strong>Integrações</strong>.</li>
+  <li>Na seção Bling, clique em <strong>Conectar</strong>.</li>
+  <li>Você será levado ao Bling para autorizar o aplicativo.</li>
+  <li>Após autorizar, o retorno é automático e a integração aparece como <strong>Ativa</strong>.</li>
+  <li>Em <strong>Integrações &rarr; Bling</strong>, defina o depósito e a natureza de operação padrão.</li>
+</ol>
+
+<h2>Permissões solicitadas e por quê</h2>
+<table>
+  <tr><th>Permissão</th><th>Para que é usada</th></tr>
+  <tr><td>Produtos (leitura e gestão)</td><td>Sincronizar catálogo, preços, imagens e variações entre o Multdrop e o Bling.</td></tr>
+  <tr><td>Categorias de produtos</td><td>Classificar os produtos criados no Bling na mesma estrutura do catálogo.</td></tr>
+  <tr><td>Controle de estoque</td><td>Refletir a quantidade disponível e lançar as saídas dos pedidos processados.</td></tr>
+  <tr><td>Depósitos de estoque</td><td>Identificar em qual depósito o estoque deve ser movimentado.</td></tr>
+  <tr><td>Pedidos de venda</td><td>Criar no Bling os pedidos recebidos nos marketplaces e acompanhar a mudança de situação.</td></tr>
+  <tr><td>Clientes e fornecedores</td><td>Registrar os dados do comprador vinculados ao pedido.</td></tr>
+  <tr><td>Integrações e lojas virtuais</td><td>Associar o pedido à loja de origem correta.</td></tr>
+  <tr><td>Dados básicos da empresa</td><td>Confirmar qual conta Bling foi conectada e exibir essa informação no painel.</td></tr>
+</table>
+
+<h2>O que a integração faz</h2>
+<h3>Pedidos</h3>
+<p>
+  Quando um pedido é recebido em um marketplace conectado, o Multdrop cria o pedido de venda
+  correspondente no Bling com itens, valores e dados do comprador. As mudanças de situação
+  acompanham o andamento do pedido.
+</p>
+<h3>Produtos e estoque</h3>
+<p>
+  O catálogo pode ser enviado do Multdrop para o Bling, incluindo imagens e variações. O estoque é
+  mantido em sincronia para evitar venda acima do disponível.
+</p>
+
+<h2>Como desinstalar</h2>
+<ol>
+  <li>No Bling, abra a Central de Extensões &rarr; <em>Minhas instalações</em>.</li>
+  <li>Localize o Multdrop e escolha <strong>Desinstalar</strong>.</li>
+  <li>A autorização é revogada imediatamente e o Multdrop deixa de acessar sua conta.</li>
+</ol>
+<p>
+  Também é possível desconectar pelo próprio Multdrop, em <strong>Integrações &rarr; Bling &rarr;
+  Desconectar</strong>. Os dados já sincronizados permanecem no Bling.
+</p>
+
+<h2>Suporte</h2>
+<p>
+  Dúvidas sobre a integração podem ser enviadas pelo painel do Multdrop, em
+  <strong>Chamados</strong>, ou pelo site <a href="https://multdrop.app">multdrop.app</a>.
+  O atendimento responde em dias úteis.
+</p>
+
+<footer class="wrap">
+  Multdrop &middot; Manual de integração com o Bling
+</footer>
+</main>
+</body>
+</html>

@@ -721,6 +721,8 @@ Route::middleware(['auth:sanctum', 'check.user.active', 'supplier.panel'])->pref
     Route::get('/supplier-admin/picking/print-history', [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'printHistory']);
     // NOV-096 -- Etiqueta combinada (cabecalho HubAI + etiqueta marketplace)
     Route::get('/supplier-admin/orders/{orderId}/combined-label',  [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'combinedLabel'])->whereNumber('orderId');
+    // MUL-445: versao em imagem da etiqueta combinada (o QZ Tray nao imprime HTML)
+    Route::get('/supplier-admin/orders/{orderId}/combined-label-image', [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'combinedLabelImage'])->whereNumber('orderId');
     Route::post('/supplier-admin/picking/print-batch-combined',    [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'printBatchCombined']);
     Route::get('/supplier-admin/print-settings',                   [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'printSettings']);
     Route::put('/supplier-admin/print-settings',                   [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'updatePrintSettings']);

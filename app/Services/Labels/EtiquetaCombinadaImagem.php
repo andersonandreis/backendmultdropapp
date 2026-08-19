@@ -53,12 +53,17 @@ class EtiquetaCombinadaImagem
         private CombinedLabelService $modelo,
     ) {}
 
-    /** Devolve a URL publica do PNG combinado, ou null se nao houver etiqueta. */
-    public function gerar(Order $order): ?string
+    /**
+     * Devolve as URLs publicas das folhas a imprimir, na ordem.
+     *
+     * Quase sempre e uma so: a etiqueta com o cabecalho. Pedido com mais de um item
+     * ganha folhas extras com a lista (MUL-448).
+     */
+    public function gerar(Order $order): array
     {
         $etiqueta = $this->caminhoDaEtiqueta($order);
         if (! $etiqueta) {
-            return null;
+            return [];
         }
 
         $disk = Storage::disk('public');
@@ -68,8 +73,10 @@ class EtiquetaCombinadaImagem
         // aceita nome simples -- subpasta escaparia do padrao da rota.
         $saida = 'labels/combinada-' . $order->id . '-' . substr(md5($etiqueta . $order->updated_at), 0, 8) . '.png';
 
+        $paginas = $this->paginasDeItens($order, $saida);
+
         if ($disk->exists($saida)) {
-            return '/storage/' . $saida;
+            return array_merge(['/storage/' . $saida], $paginas);
         }
 
         try {
@@ -104,10 +111,10 @@ class EtiquetaCombinadaImagem
             $folha->writeImage($disk->path($saida));
             $folha->destroy();
 
-            return '/storage/' . $saida;
+            return array_merge(['/storage/' . $saida], $paginas);
         } catch (\Throwable $e) {
             Log::warning('[MUL-445] falhou montar a etiqueta combinada: ' . $e->getMessage(), ['order_id' => $order->id]);
-            return null;
+            return [];
         }
     }
 
@@ -126,7 +133,14 @@ class EtiquetaCombinadaImagem
         $largMeta     = (int) round(40 * self::MM);          // .cabecalho-meta width
         $largProdutos = self::LARGURA - (2 * $padH) - $largMeta;
 
-        $produtos = $this->colunaDeProdutos($order, $largProdutos);
+        // MUL-448: com mais de um item a lista nao cabe. Duas linhas de produto
+        // batiam no teto de 26mm, o cabecalho empurrava a etiqueta e ela saia
+        // cortada embaixo -- o pedido 107022 perdeu ~8mm de etiqueta assim. Agora o
+        // cabecalho avisa e a lista vai numa folha propria, entao a etiqueta volta a
+        // ter o mesmo espaco de um pedido de item unico.
+        $produtos = $order->items->count() > 1
+            ? $this->avisoDeMultiplosItens($order, $largProdutos)
+            : $this->colunaDeProdutos($order, $largProdutos);
         $meta     = $this->colunaDeMeta($order, $largMeta - (int) round(2 * self::MM));
 
         $conteudo = max($produtos->getImageHeight(), $meta->getImageHeight());
@@ -183,6 +197,156 @@ class EtiquetaCombinadaImagem
         $canvas->cropImage($largura, max($y, 1), 0, 0);
 
         return $canvas;
+    }
+
+    /**
+     * MUL-448: faixa de aviso que substitui a lista quando ha mais de um item.
+     *
+     * Ocupa uma linha so, de proposito: e ela que devolve a altura do cabecalho ao
+     * tamanho de um pedido comum e impede a etiqueta de sair cortada.
+     */
+    private function avisoDeMultiplosItens(Order $order, int $largura): \Imagick
+    {
+        $lado = (int) round(9 * self::MM);
+        $alt  = $lado + (int) round(1 * self::MM);
+
+        $canvas = new \Imagick();
+        $canvas->newImage($largura, $alt, 'white');
+        $canvas->setImageFormat('png');
+
+        // Triangulo de atencao, preenchido -- le bem em impressao termica, que nao
+        // tem meio-tom, e nao depende de arquivo de imagem no servidor.
+        $tri = new \ImagickDraw();
+        $tri->setFillColor('#000000');
+        $tri->polygon([
+            ['x' => $lado / 2, 'y' => 2],
+            ['x' => $lado - 2, 'y' => $lado - 4],
+            ['x' => 2,         'y' => $lado - 4],
+        ]);
+        $canvas->drawImage($tri);
+
+        $exclamacao = new \ImagickDraw();
+        $exclamacao->setFont(self::FONTE_BOLD);
+        $exclamacao->setFontSize((int) round($lado * 0.5));
+        $exclamacao->setFillColor('#ffffff');
+        $exclamacao->setTextAlignment(\Imagick::ALIGN_CENTER);
+        $canvas->annotateImage($exclamacao, (int) ($lado / 2), $lado - 8, 0, '!');
+
+        $x = $lado + (int) round(2 * self::MM);
+
+        $titulo = new \ImagickDraw();
+        $titulo->setFont(self::FONTE_BOLD);
+        $titulo->setFontSize((int) round(11 * self::CSSPX));
+        $titulo->setFillColor('#000000');
+        $canvas->annotateImage($titulo, $x, (int) round(11 * self::CSSPX), 0, 'PEDIDO COM MULTIPLOS ITENS');
+
+        $sub = new \ImagickDraw();
+        $sub->setFont(self::FONTE);
+        $sub->setFontSize((int) round(8 * self::CSSPX));
+        $sub->setFillColor('#222222');
+        $canvas->annotateImage($sub, $x, (int) round(11 * self::CSSPX) + (int) round(9 * self::CSSPX), 0,
+            $order->items->count() . ' itens - confira a folha de itens em anexo');
+
+        return $canvas;
+    }
+
+    /**
+     * MUL-448: folha(s) com a lista de itens, impressas depois da etiqueta.
+     *
+     * Mesma linha de produto do cabecalho (foto, badge de quantidade, SKU pai e
+     * nome), so que sem teto de altura -- aqui a lista e o conteudo, nao o apoio.
+     * Quebra em mais de uma folha se nao couber.
+     */
+    private function paginasDeItens(Order $order, string $chaveDaEtiqueta): array
+    {
+        if ($order->items->count() <= 1) {
+            return [];
+        }
+
+        $disk    = Storage::disk('public');
+        $base    = str_replace('.png', '', $chaveDaEtiqueta);
+        $padH    = (int) round(4 * self::MM);
+        $largura = self::LARGURA - (2 * $padH);
+        $margem  = (int) round(8 * self::MM);
+
+        $urls   = [];
+        $folha  = null;
+        $y      = 0;
+        $numero = 1;
+
+        $abrir = function () use (&$folha, &$y, $order, $padH) {
+            $folha = new \Imagick();
+            $folha->newImage(self::LARGURA, self::ALTURA, 'white');
+            $folha->setImageFormat('png');
+            $y = $this->tituloDaFolhaDeItens($folha, $order, $padH);
+        };
+
+        $fechar = function () use (&$folha, &$urls, &$numero, $base, $disk) {
+            $nome = $base . '-itens' . $numero . '.png';
+            $disk->makeDirectory('labels');
+            $folha->writeImage($disk->path($nome));
+            $folha->destroy();
+            $folha = null;
+            $urls[] = '/storage/' . $nome;
+            $numero++;
+        };
+
+        $abrir();
+        $primeiro = true;
+
+        foreach ($order->items as $item) {
+            if ($y > self::ALTURA - $margem - (int) round(14 * self::MM)) {
+                $fechar();
+                $abrir();
+                $primeiro = true;
+            }
+
+            if (! $primeiro) {
+                $y += (int) round(1.5 * self::MM);
+                $this->linhaTracejada($folha, $y, '#999999', 2, 3, 1);
+                $y += (int) round(1.5 * self::MM);
+            }
+            $primeiro = false;
+
+            $linha = new \Imagick();
+            $linha->newImage($largura, (int) round(20 * self::MM), 'white');
+            $linha->setImageFormat('png');
+            $alt = $this->desenharLinhaDeProduto($linha, $item, 0, $largura);
+            $linha->cropImage($largura, max($alt, 1), 0, 0);
+            $folha->compositeImage($linha, \Imagick::COMPOSITE_OVER, $padH, $y);
+            $linha->destroy();
+
+            $y += $alt;
+        }
+
+        $fechar();
+
+        return $urls;
+    }
+
+    /** Cabecalho da folha de itens. Devolve o y onde a lista comeca. */
+    private function tituloDaFolhaDeItens(\Imagick $folha, Order $order, int $padH): int
+    {
+        $y = (int) round(6 * self::MM);
+
+        $titulo = new \ImagickDraw();
+        $titulo->setFont(self::FONTE_BOLD);
+        $titulo->setFontSize((int) round(13 * self::CSSPX));
+        $titulo->setFillColor('#000000');
+        $folha->annotateImage($titulo, $padH, $y, 0, 'ITENS DO PEDIDO (' . $order->items->count() . ')');
+
+        $meta = new \ImagickDraw();
+        $meta->setFont(self::FONTE);
+        $meta->setFontSize((int) round(9 * self::CSSPX));
+        $meta->setFillColor('#333333');
+        $meta->setTextAlignment(\Imagick::ALIGN_RIGHT);
+        $folha->annotateImage($meta, self::LARGURA - $padH, $y, 0,
+            $order->order_number . '  ' . strtoupper((string) ($order->marketplace ?: $order->source)));
+
+        $y += (int) round(2 * self::MM);
+        $this->linhaTracejada($folha, $y, '#000000', 6, 4, 2);
+
+        return $y + (int) round(2 * self::MM);
     }
 
     /** Uma `.produto-row`: `.produto-foto` (12mm) + `.produto-info`, ambas centradas. */

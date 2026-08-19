@@ -4707,9 +4707,9 @@ class SupplierAdminPanelController extends Controller
             ->with("items.product")
             ->firstOrFail();
 
-        $url = $servico->gerar($order);
+        $folhas = $servico->gerar($order);
 
-        if (! $url) {
+        if (! $folhas) {
             return response()->json([
                 "success" => false,
                 "message" => "Pedido sem etiqueta do marketplace disponivel.",
@@ -4718,9 +4718,14 @@ class SupplierAdminPanelController extends Controller
 
         return response()->json([
             "success" => true,
-            // URL relativa de proposito: e assim que o painel reconhece a etiqueta e
+            // URLs relativas de proposito: e assim que o painel reconhece a etiqueta e
             // a busca pelo proxy autenticado, igual faz com label_url (MUL-445b).
-            "data"    => ["url" => $url],
+            "data"    => [
+                // MUL-448: pedido com mais de um item imprime folhas extras com a
+                // lista. "url" continua sendo a etiqueta -- e o que o preview mostra.
+                "url"   => $folhas[0],
+                "urls"  => $folhas,
+            ],
         ]);
     }
 

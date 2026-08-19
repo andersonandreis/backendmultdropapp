@@ -247,7 +247,9 @@ class CombinedLabelService
     /**
      * Monta o array de dados de UM item (foto SKU pai + qtd + SKU pai + nome).
      */
-    private function buildItem($item): array
+    /** MUL-445d: publico -- o renderizador de imagem monta o item pelo MESMO metodo,
+     *  para os dois nao divergirem no SKU pai, na foto nem no nome. */
+    public function buildItem($item): array
     {
         $parentSku = $this->resolveParentSku($item);
         $imageUrl  = $this->resolveParentImage($item);

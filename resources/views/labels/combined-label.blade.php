@@ -35,9 +35,12 @@
         }
 
         .etiqueta {
+            /* MUL-440: a folha tinha 2mm de padding em volta de tudo, e a etiqueta da
+               Shopee ja traz a propria margem. Duas folgas somadas deixavam o codigo
+               de barras pequeno demais. O respiro do texto passou para o cabecalho. */
             width: 100mm;
             height: 150mm;
-            padding: 2mm;
+            padding: 0;
             page-break-after: always;
             page-break-inside: avoid;
             position: relative;
@@ -48,8 +51,15 @@
         .cabecalho {
             width: 100%;
             border-bottom: 1px dashed #000;
-            padding-bottom: 1.5mm;
+            /* MUL-440: respiro do texto vive aqui agora */
+            padding: 1.5mm 2mm;
             margin-bottom: 1.5mm;
+            /* MUL-439: teto duro. Sem isto, titulo grande (ou pedido com varios itens)
+               empurrava o cabecalho para baixo e roubava area da etiqueta do
+               marketplace -- que e a parte que a transportadora le. O cabecalho e
+               apoio para a separacao; se faltar espaco, quem corta e ele. */
+            max-height: 26mm;
+            overflow: hidden;
         }
 
         .cab-linha { display: table; width: 100%; table-layout: fixed; }
@@ -111,25 +121,35 @@
             background: #000;
             color: #fff;
             font-weight: bold;
-            font-size: 14px;
-            padding: 0 2mm;
-            border-radius: 2mm;
-            line-height: 1.4;
-            margin-right: 1mm;
+            /* MUL-439: 14px -> 8px, o MESMO tamanho do nome do produto (pedido do
+               Ruan, 19/08). O destaque fica por conta do negrito e do fundo preto,
+               nao do tamanho -- que era o que empurrava o cabecalho. */
+            font-size: 8px;
+            /* MUL-439: o badge tinha 2mm de folga de cada lado com fonte de 8px --
+               a caixa preta ficava tres vezes maior que o texto dentro dela. */
+            padding: 0 0.8mm;
+            border-radius: 1mm;
+            line-height: 1.25;
+            margin-right: 0.8mm;
         }
 
         .produto-sku {
-            font-size: 12px;
+            /* MUL-439: 12px -> 8px, igual ao nome do produto. Negrito mantido. */
+            font-size: 8px;
             font-weight: bold;
             display: inline-block;
+            /* SKU longo nao quebra a linha em duas */
+            white-space: nowrap;
         }
 
         .produto-nome {
-            font-size: 9px;
+            /* MUL-439: 9px -> 8px e teto de 2 linhas. O nome e o que mais varia de
+               tamanho entre produtos, e era ele que fazia a area crescer. */
+            font-size: 8px;
             color: #222;
             margin-top: 0.5mm;
-            line-height: 1.2;
-            max-height: 6mm;
+            line-height: 1.15;
+            max-height: 4.4mm;
             overflow: hidden;
         }
 
@@ -140,10 +160,14 @@
         }
 
         .etiqueta-marketplace img {
-            max-width: 96mm;
-            max-height: 118mm;
-            width: auto;
-            height: auto;
+            /* MUL-441: medidas definidas pelo Ruan em 19/08/2026. Largura e altura
+               fixas (nao "auto"): a etiqueta ocupa a area inteira reservada a ela,
+               em vez de encolher para respeitar a proporcao da imagem. Isso e o que
+               deixa o codigo de barras no maior tamanho possivel na impressao. */
+            max-width: 98mm;
+            max-height: 150mm;
+            width: 98mm;
+            height: 130mm;
         }
 
         .nota-fiscal {

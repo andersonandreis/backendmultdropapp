@@ -152,6 +152,17 @@ class CombinedLabelService
         $invoiceImage = null;
         $invoiceData  = null;
 
+        // MUL-440: etiqueta que ja vem como imagem (o caso da Shopee, 252 de 262 em
+        // 19/08/2026) tambem passa a ser recortada. Se o recorte falhar, segue a
+        // original -- imprimir menor e melhor do que nao imprimir.
+        if ($labelImage && str_starts_with($labelImage, '/storage/')
+            && preg_match('/\.(png|jpe?g)$/i', $labelImage)) {
+            $recortada = $this->renderer->trimmedImageToUrl(ltrim(substr($labelImage, 9), '/'));
+            if ($recortada) {
+                $labelImage = $recortada;
+            }
+        }
+
         if ($labelImage && str_starts_with($labelImage, '/storage/')
             && str_ends_with(strtolower($labelImage), '.pdf')) {
             $rel = substr($labelImage, strlen('/storage/'));

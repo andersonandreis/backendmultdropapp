@@ -135,6 +135,67 @@ class LabelPdfRenderer
         }
     }
 
+    /**
+     * MUL-440: recorta a borda branca de uma etiqueta que JA e imagem (PNG/JPG).
+     *
+     * O trimmedPageToUrl acima so atende PDF, porque comeca rasterizando a pagina.
+     * Medido em 19/08/2026: das etiquetas em aberto, 252 sao PNG e 10 sao PDF -- ou
+     * seja, a esmagadora maioria nunca passou por recorte e era impressa com a folga
+     * que a Shopee ja embute na imagem. Com a folha de 100x150mm, essa folga dupla
+     * espremia o codigo de barras.
+     *
+     * A borda de 8px que sobra existe de proposito: impressora termica corta um fio
+     * na extremidade, e sem nenhuma folga o codigo pode sair mordido.
+     */
+    public function trimmedImageToUrl(string $relPath): ?string
+    {
+        $disk = Storage::disk('public');
+        $out  = $this->cachePath($relPath, 1, 'imgtrim');
+
+        if ($disk->exists($out)) {
+            return '/storage/' . $out;
+        }
+        // MUL-440b: nesta instalacao /storage/labels e uma rota de PROXY para o hub
+        // (routes/web.php), entao o arquivo pode nao existir no disco local. Sem baixar
+        // antes, o Imagick nao tem o que abrir e o recorte falhava calado -- a etiqueta
+        // seguia sendo impressa pequena, com a folga branca da Shopee.
+        $origem = $disk->exists($relPath) ? $disk->path($relPath) : null;
+        $temporario = null;
+
+        if (! $origem) {
+            try {
+                $r = \Illuminate\Support\Facades\Http::timeout(20)
+                    ->get(rtrim((string) config('app.url'), '/') . '/storage/' . $relPath);
+
+                if (! $r->successful() || strlen($r->body()) < 512) {
+                    return null;
+                }
+
+                $temporario = sys_get_temp_dir() . '/lbl-' . md5($relPath) . '.img';
+                file_put_contents($temporario, $r->body());
+                $origem = $temporario;
+            } catch (\Throwable $e) {
+                Log::warning("[LabelRender] nao consegui baixar a etiqueta {$relPath}: " . $e->getMessage());
+                return null;
+            }
+        }
+
+        try {
+            $im = new \Imagick($origem);
+            $im->setImageBackgroundColor('white');
+            $im->trimImage(0.1 * \Imagick::getQuantum());
+            $im->setImagePage(0, 0, 0, 0);
+            $im->borderImage('white', 8, 8);
+            $im->writeImage($disk->path($out));
+            $im->destroy();
+
+            return '/storage/' . $out;
+        } catch (\Throwable $e) {
+            Log::warning("[LabelRender] trim de imagem falhou pra {$relPath}: " . $e->getMessage());
+            return null; // sem recorte o chamador segue com a imagem original
+        }
+    }
+
     /** Renderiza pagina 1 do PDF e devolve URL /storage/... (nota/DANFE). */
     public function pageToUrl(string $relPath, int $page = 1): ?string
     {

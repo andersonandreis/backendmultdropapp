@@ -198,6 +198,26 @@ class SupplierAdminPanelController extends Controller
             return;
         }
 
+        // 3. MUL-443: pagamento pela CARTEIRA. O debito do seller vive no ledger
+        //    (client_supplier_transactions), nao em payments nem em pix_transactions --
+        //    essas duas cobrem gateway e PIX. Sem este ramo, pedido pago por saldo era
+        //    barrado no bip mesmo tendo wallet_paid_at preenchido.
+        //
+        //    Medido em 19/08/2026: o pedido MUL-260818-E409 saiu na impressora e a baixa
+        //    foi recusada aqui; ele tem wallet_paid_at e um debito de 2,22 no ledger, e
+        //    outros 13 pedidos da fila estavam na mesma situacao.
+        //
+        //    Nao afrouxa a regra: o pagamento continua sendo exigido, so passa a ser
+        //    reconhecido na tabela onde a carteira de fato registra.
+        $temDebitoNoLedger = \Illuminate\Support\Facades\DB::table("client_supplier_transactions")
+            ->where("order_id", $order->id)
+            ->where("type", "debit")
+            ->exists();
+
+        if ($temDebitoNoLedger) {
+            return;
+        }
+
         \Illuminate\Support\Facades\Log::warning("[ShipGuard] Tentativa de envio sem pagamento confirmado", [
             "order_id"    => $order->id,
             "supplier_id" => $supplier->id,

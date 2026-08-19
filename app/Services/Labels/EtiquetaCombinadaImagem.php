@@ -90,10 +90,14 @@ class EtiquetaCombinadaImagem
         $texto = new \ImagickDraw();
         $texto->setFillColor('black');
 
-        foreach ($order->items->take(3) as $item) {
+        $itens    = $order->items;
+        $desenhados = 0;
+
+        foreach ($itens as $item) {
             if ($y > $teto - 40) {
                 break;
             }
+            $desenhados++;
 
             $qtd = max(1, (int) $item->quantity);
             $sku = trim((string) ($item->sku ?: '-'));
@@ -123,6 +127,19 @@ class EtiquetaCombinadaImagem
             }
 
             $y += 6;
+        }
+
+        // MUL-445c: cabecalho cortado precisa DIZER que cortou. Sem isso o separador
+        // le a lista como se fosse completa e fecha a caixa com item faltando -- o
+        // teto de 26mm existe para nao roubar area da etiqueta, nao para esconder item.
+        $restantes = $itens->count() - $desenhados;
+        if ($restantes > 0) {
+            $aviso = new \ImagickDraw();
+            $aviso->setFillColor('black');
+            $aviso->setFont(self::FONTE_BOLD);
+            $aviso->setFontSize(22);
+            $aviso->setTextAlignment(\Imagick::ALIGN_RIGHT);
+            $folha->annotateImage($aviso, self::LARGURA - $margem, $teto - 6, 0, "+{$restantes} item(ns) — confira na tela");
         }
 
         // Pedido e canal, alinhados a direita da primeira linha

@@ -1636,7 +1636,10 @@ class SupplierAdminPanelController extends Controller
             ->leftJoin('products as p', 'p.id', '=', 'oi.product_id')
             ->whereIn('oi.order_id', $orderIds)
             ->orderBy('oi.id')
-            ->get(['oi.order_id', 'oi.sku', 'oi.variation_sku', 'oi.name', 'oi.quantity', 'oi.product_image', 'p.ean', 'p.gtin']);
+            // MUL-438: + warehouse_location. A tela ja tinha a coluna "Localizacao" e
+            // mostrava N/A para todo mundo, porque o campo nunca saiu do backend --
+            // mesmo padrao do ean/gtin (MUL-427) e do packed_at (MUL-433).
+            ->get(['oi.order_id', 'oi.sku', 'oi.variation_sku', 'oi.name', 'oi.quantity', 'oi.product_image', 'p.ean', 'p.gtin', 'p.warehouse_location']);
         $out = [];
         foreach ($rows as $r) {
             $out[(int) $r->order_id][] = [
@@ -1646,6 +1649,8 @@ class SupplierAdminPanelController extends Controller
                 'variation_sku' => $r->variation_sku,
                 'ean'           => $r->ean,
                 'gtin'          => $r->gtin,
+                // MUL-438: posicao no galpao, o que o separador usa para achar a peca
+                'warehouse_location' => $r->warehouse_location,
                 'qtd'           => (int) ($r->quantity ?? 1),
             ];
         }
@@ -1885,6 +1890,11 @@ class SupplierAdminPanelController extends Controller
                         'nome'         => $item['descricao'] ?? 'Sem nome',  // NOV-112 B3
                         'url_foto'     => $item['foto'] ?? null,
                         'imagem'       => $item['foto'] ?? null,             // NOV-112 B3
+                        // MUL-438: a lista de separacao existe para o operador caminhar
+                        // pelo galpao; sem a posicao ele procura peca por peca.
+                        'warehouse_location' => $item['warehouse_location'] ?? null,
+                        'localizacao'        => $item['warehouse_location'] ?? null,
+                        'ean'                => $item['ean'] ?? null,
                         'qtd_total'    => 0,
                         'pedidos'      => [],
                     ];

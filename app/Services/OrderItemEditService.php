@@ -99,7 +99,14 @@ class OrderItemEditService
     {
         return $this->transacao($order, function (Order $order) use ($item, $novoSku, $quantity, $actorUserId, $validarPlano) {
             $item = $item->fresh();
-            $this->assertNaoKit($item);
+            // MUL-420 (decisao do Ruan, 20/08/2026): trocar SKU de componente de kit e
+            // permitido — a escrita nao toca client_kit_id/is_kit_component/
+            // kit_source_item_id, entao a relacao do kit fica intacta. O que segue
+            // bloqueado e mudar QUANTIDADE de componente: quantidade e estrutural do
+            // kit (MUL-243). addItem/removeItem continuam recusando componentes.
+            if ($quantity !== null && (int) $quantity !== (int) $item->quantity) {
+                $this->assertNaoKit($item);
+            }
 
             if ($novoSku === null && $quantity === null) {
                 throw new \InvalidArgumentException('Informe product_sku, quantity, ou os dois.');

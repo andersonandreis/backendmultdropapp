@@ -1337,11 +1337,47 @@ class OrderController extends Controller
 
         $orders = Order::where('client_id', $client->id)
             ->whereIn('id', $ids)
-            ->get(['id', 'status', 'wallet_paid_at', 'paid_at']);
+            ->get(['id', 'status', 'wallet_paid_at', 'paid_at', 'hubai_order_id']);
+
+        // MUL-453: com o QR na tela o painel pergunta isto de 5 em 5 segundos, mas ate
+        // agora a resposta so relia o espelho local. O PIX de pedido nasce NO HUB -- o
+        // /pay daqui ja e proxy pra la (MUL-366) -- e a credencial do gateway e do
+        // fornecedor, que vive naquele lado. Entao este backend nao tem como perguntar
+        // ao gateway: quem pergunta e o hub.
+        //
+        // Sem isto, wallet_paid_at so mudava quando o postback da Shipay chegasse (nunca
+        // chega: zero registros em toda a base de log) ou quando o pix-status-poll
+        // rodasse, de 15 em 15 minutos. O lojista pagava e ficava olhando o modal girar.
+        $naoPagos = $orders->filter(fn ($o) => $o->wallet_paid_at === null && $o->hubai_order_id);
+
+        $pagosNoHub = [];
+        if ($naoPagos->isNotEmpty()) {
+            try {
+                $resp = \App\Services\Federation\HubProxyHelper::forwardToHub(
+                    'get',
+                    '/orders/pay-status',
+                    ['ids' => $naoPagos->pluck('hubai_order_id')->implode(',')],
+                );
+                foreach ((array) (json_decode($resp->getContent(), true)['data'] ?? []) as $linha) {
+                    if (! empty($linha['paid'])) {
+                        $pagosNoHub[(int) $linha['id']] = true;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Hub fora do ar nao pode derrubar o polling: cai no espelho local e o
+                // proximo ciclo tenta de novo.
+                \Illuminate\Support\Facades\Log::warning('[MUL-453] hub nao respondeu o pay-status', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         $data = $orders->map(fn ($o) => [
             'id' => $o->id,
-            'paid' => $o->wallet_paid_at !== null,
+            // Pago se o carimbo ja espelhou aqui OU se o hub acabou de confirmar --
+            // o fanout leva alguns segundos e o lojista nao precisa esperar por ele.
+            'paid' => $o->wallet_paid_at !== null
+                || ($o->hubai_order_id && isset($pagosNoHub[(int) $o->hubai_order_id])),
             'wallet_paid_at' => $o->wallet_paid_at?->toIso8601String(),
             'status' => $o->status,
         ])->values();

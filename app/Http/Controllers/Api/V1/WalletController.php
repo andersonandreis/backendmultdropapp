@@ -182,6 +182,80 @@ class WalletController extends Controller
             new OA\Response(response: 404, description: 'Deposito nao encontrado'),
         ]
     )]
+    /**
+     * MUL-452: pergunta ao gateway se o PIX foi pago e credita se foi.
+     *
+     * Usa o MESMO caminho canonico do postback (WalletLedger com chave de
+     * idempotencia por transacao), entao webhook e conferencia manual podem rodar
+     * os dois sem creditar duas vezes.
+     *
+     * Devolve true quando creditou agora.
+     */
+    private function confereNoGateway(PixTransaction $tx): bool
+    {
+        try {
+            $supplier = Supplier::find($tx->supplier_id);
+            if (! $supplier) {
+                return false;
+            }
+
+            $gateway = PaymentGatewayFactory::makeForSupplier($supplier);
+            if ($gateway->getPaymentStatus((string) $tx->external_id) !== 'paid') {
+                return false;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[MUL-452] falha ao conferir o PIX no gateway', [
+                'pix_transaction_id' => $tx->id,
+                'error'              => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return $this->creditaDeposito($tx, ['fonte' => 'conferencia', 'gateway' => $tx->gateway]);
+    }
+
+    /**
+     * MUL-452: confirma o deposito e credita a carteira.
+     *
+     * Idempotente pela chave 'pix_topup:{id}' no ledger (MUL-363 Fase 2) -- e o que
+     * permite o postback e a conferencia coexistirem sem risco de credito dobrado.
+     */
+    private function creditaDeposito(PixTransaction $tx, array $payload = []): bool
+    {
+        if ($tx->status === 'paid') {
+            return false;
+        }
+
+        $tx->update([
+            'status'           => 'paid',
+            'paid_at'          => now(),
+            'gateway_response' => $payload ?: $tx->gateway_response,
+        ]);
+
+        $ledgerTx = app(\App\Services\Financial\Ledger\WalletLedger::class)->credit(
+            $tx->client_id, $tx->supplier_id, (float) $tx->net_amount,
+            new \App\Services\Financial\Ledger\LedgerEntryMeta(
+                type: 'pix_topup',
+                description: 'Deposito PIX #' . $tx->id,
+                actor: 'system:MUL-452',
+                idempotencyKey: 'pix_topup:' . $tx->id,
+                pixTransactionId: $tx->id,
+                extra: array_merge(['payment_method' => 'pix'], $payload),
+            )
+        );
+
+        Log::info('[MUL-452] deposito confirmado e creditado', [
+            'pix_transaction_id' => $tx->id,
+            'client_id'          => $tx->client_id,
+            'supplier_id'        => $tx->supplier_id,
+            'amount'             => $tx->net_amount,
+            'novo_saldo'         => (float) $ledgerTx->running_balance,
+        ]);
+
+        return true;
+    }
+
     public function depositStatus(Request $request, int $id): JsonResponse
     {
         $client = $this->clientOrFail($request);
@@ -189,6 +263,22 @@ class WalletController extends Controller
         $tx = PixTransaction::where('client_id', $client->id)
             ->where('type', 'wallet_topup')
             ->findOrFail($id);
+
+        // MUL-452: o botao "conferir" agora CONFERE.
+        //
+        // Ate aqui ele so devolvia a linha local, entao dizia "pendente" mesmo com o
+        // dinheiro ja na Shipay. Isso so funcionava enquanto o postback chegasse -- e
+        // ele nunca chegou: zero registros de '[Wallet:Shipay] Webhook recebido' em
+        // toda a base de log, com postback_url indo certo no request e a rota
+        // respondendo 200 publicamente. Medido em 20/08/2026 no deposito #27
+        // (TOTAO STORE, R$ 10,00): Shipay respondia 'paid', a carteira nao tinha
+        // credito e o extrato nao mostrava nada.
+        //
+        // Depender de um aviso que a gente nao controla e o erro; perguntar e barato.
+        if ($tx->status === 'pending') {
+            $this->confereNoGateway($tx);
+            $tx->refresh();
+        }
 
         return response()->json([
             'transaction_id' => $tx->id,

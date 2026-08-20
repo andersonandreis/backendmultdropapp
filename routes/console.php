@@ -380,7 +380,7 @@ Schedule::call(function () {
                 \App\Jobs\SyncBlingJob::dispatch($account->id, 'orders');
             }
         });
-})->hourly()->name('bling-orders-periodic-sync')->withoutOverlapping()->skip(fn () => env('SCHEDULES_TOKEN_SYNC_DISABLED', false));
+})->cron(config('imports.bling_orders_sync_cron', '0 * * * *'))->name('bling-orders-periodic-sync')->withoutOverlapping()->skip(fn () => env('SCHEDULES_TOKEN_SYNC_DISABLED', false));
 
 // MUL-077b: Produtos Bling a cada 6h (catalogo muda pouco, sync varre todos sem filtro de data)
 Schedule::call(function () {

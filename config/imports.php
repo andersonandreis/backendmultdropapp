@@ -52,5 +52,11 @@ return [
     | no catalogo local e descartado com log. Ler via config(), nunca env().
     */
     'mirror_require_catalog_sku' => (bool) env('MIRROR_REQUIRE_CATALOG_SKU', false),
+    /*
+    | MUL-413: cadencia da varredura de pedidos do Bling (bling-orders-periodic-sync).
+    | Default 0 * * * * (horaria, comportamento historico). No multdrop roda de 5 em 5
+    | minutos por decisao do Ruan em 20/08/2026. Ler via config(), nunca env().
+    */
+    'bling_orders_sync_cron' => env('BLING_ORDERS_SYNC_CRON', '0 * * * *'),
 
 ];

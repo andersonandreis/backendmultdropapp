@@ -81,6 +81,35 @@ class FetchShippingLabelJob implements ShouldQueue, ShouldBeUnique
                 return;
             }
 
+            // =================================================================
+            // MUL-451: em modo BRIDGE quem fala com o marketplace e o hub.
+            //
+            // A WL baixava etiqueta por conta propria mesmo com a plataforma em
+            // bridge. Isso cria dois donos do mesmo dado: em 18/08/2026 esta WL
+            // baixou a etiqueta do pedido 2000017999615042, o hub nao tinha, e o
+            // espelho de volta apagou a de ca -- o painel do seller passou a dizer
+            // "aguardando liberacao do marketplace" num pedido ja em transito.
+            //
+            // Nao precisa fallback local: o hub carimba label_url e o OrderObserver
+            // de la dispara order.updated nesse campo, entao a etiqueta chega aqui
+            // pelo fanout. Quem insiste com o marketplace e o CheckLabelAvailability
+            // do hub. Aqui so registramos que estamos esperando, para a espera ficar
+            // visivel na tela em vez de virar silencio.
+            // =================================================================
+            $instalacao = app(\App\Services\InstallationConfig::class);
+            if ($order->source && $instalacao->usesBridge((string) $order->source)) {
+                if (empty($order->label_url)) {
+                    $order->forceFill(['label_status_reason' => 'aguardando_hub'])->saveQuietly();
+                }
+                Log::info('[FetchLabel] MUL-451: plataforma em bridge — quem baixa e o hub', [
+                    'order_id' => $order->id,
+                    'source'   => $order->source,
+                    'trigger'  => $this->trigger,
+                ]);
+
+                return;
+            }
+
             // MUL-091: pedido sem marketplace_account_id — legado importado sem conta associada.
             // Gravar motivo padronizado e descartar (MES-046-A).
             if (! $order->marketplace_account_id) {

@@ -166,6 +166,11 @@ class FinancialController extends Controller
             $query->where(function ($q) use ($s) {
                 $q->where('description', 'like', "%{$s}%")
                   ->orWhere('reference', 'like', "%{$s}%");
+                // MUL-360 item 26: o deep-link "Transacao #id" de /pedidos chega como
+                // ?tx=<id> e o front semeia a busca com o numero - casar tambem o id.
+                if (ctype_digit((string) $s)) {
+                    $q->orWhere('id', (int) $s);
+                }
             });
         }
 

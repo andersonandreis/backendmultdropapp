@@ -386,6 +386,58 @@ class HubAIOrderWebhookController extends Controller
                         $update[$k] = null;
                     }
                 }
+                // =============================================================
+                // MUL-450: o espelho nunca REBAIXA o que esta WL ja sabe.
+                //
+                // O pedido e um so, mas existem dois registros -- o do hub e o daqui --
+                // e ate agora o de la vencia sempre. Quando o hub criou a copia do
+                // pedido 2000017999615042 lendo a API da ML (20/08/2026), ele nao tinha
+                // etiqueta nem nota, e o fanout apagou as daqui: o painel do seller
+                // passou a mostrar "aguardando liberacao do marketplace" e nota
+                // pendente, num pedido que tinha etiqueta impressa, NF-e de entrada
+                // autorizada e ja estava em transito na transportadora.
+                //
+                // A premissa da allowlist (INF-053 letra A) e que o hub e a fonte
+                // desses campos. Ela nao vale quando foi a WL que baixou a etiqueta
+                // (MUL-244) ou que recebeu a nota: hub que nao sabe nao e prova de que
+                // nao existe. Ausencia de dado la nao e informacao nova aqui.
+                // =============================================================
+
+                // A etiqueta e um ARQUIVO que existe neste storage. Null do hub nao apaga.
+                if (array_key_exists('label_url', $update) && $update['label_url'] === null && ! empty($order->label_url)) {
+                    unset($update['label_url']);
+                }
+
+                // paid_at e o instante em que o marketplace confirmou o pagamento. So
+                // aceita se aqui estiver vazio ou se o valor do hub for ANTERIOR --
+                // reescrever para "agora" faz o pedido parecer pago no momento em que o
+                // hub o importou, e foi o que aconteceu (18/08 14:45 virou 19/08 22:58).
+                if (! empty($update['paid_at']) && ! empty($order->paid_at)) {
+                    try {
+                        if (\Illuminate\Support\Carbon::parse($update['paid_at'])->gt(\Illuminate\Support\Carbon::parse($order->paid_at))) {
+                            unset($update['paid_at']);
+                        }
+                    } catch (\Throwable) {
+                        unset($update['paid_at']);
+                    }
+                }
+
+                // Nota fiscal de ENTRADA autorizada nao volta a pendente. Reincidente:
+                // ja tinha sido reportado em 19/08/2026 no painel do fornecedor.
+                if (isset($update['nfe_entrada_status'])
+                    && $order->nfe_entrada_status === 'authorized'
+                    && $update['nfe_entrada_status'] !== 'authorized') {
+                    unset($update['nfe_entrada_status']);
+                }
+
+                // O numero do pedido e a referencia que a operacao usa na esteira, na
+                // etiqueta e no atendimento. Pedido que ja existe aqui nao troca de nome
+                // porque o hub gerou outro.
+                if (isset($update['order_number']) && ! empty($order->order_number)
+                    && $update['order_number'] !== $order->order_number) {
+                    unset($update['order_number']);
+                }
+
                 $update['hubai_order_id'] = $hubaiOrderId;
                 // INF-053 letra C: marca sync do hub pra Observer nao disparar fanout de volta
                 \App\Observers\OrderObserver::$syncingFromHub[$order->id] = true;

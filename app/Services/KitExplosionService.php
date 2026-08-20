@@ -25,6 +25,18 @@ class KitExplosionService
             return $result;
         }
 
+        // MUL-422b: pedido com troca manual de SKU e curadoria humana — a explosao
+        // deletava o componente trocado (MUL-243 idempotente) e o recriava do cadastro
+        // do kit, desfazendo a decisao do painel a cada fanout. Troca manual vence.
+        $temTrocaManual = \Illuminate\Support\Facades\DB::table('order_events')
+            ->where('order_id', $order->id)
+            ->where('event_type', 'item_product_swapped')
+            ->exists();
+        if ($temTrocaManual) {
+            $result['skipped_manual_swap'] = $items->count();
+            return $result;
+        }
+
         $clientKits = ClientKit::where('client_id', $order->client_id)
             ->where('is_active', true)
             ->with('items.clientProduct.product')

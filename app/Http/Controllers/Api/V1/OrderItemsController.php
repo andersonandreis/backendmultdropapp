@@ -96,10 +96,23 @@ class OrderItemsController extends Controller
                     $this->svc->assertCatalogoLocal($order, $novoSku);
                 }
                 // Item identificado pelo SKU dele no pedido, nunca pelo id local.
-                return $this->proxyRaw($request, $order, 'patch', '/items/' . rawurlencode($item->sku), [
+                $respProxy = $this->proxyRaw($request, $order, 'patch', '/items/' . rawurlencode($item->sku), [
                     'product_sku' => $novoSku,
                     'quantity'    => isset($data['quantity']) ? (int) $data['quantity'] : null,
                 ]);
+                // MUL-422b: o evento de troca vivia so no hub; os guards (sync/explosao)
+                // leem order_events LOCAIS, entao o WL continuava revertendo por conta
+                // propria. Swap aceito no hub ganha o evento espelho aqui.
+                if ($novoSku !== null && $novoSku !== $item->sku && $respProxy->getStatusCode() < 300) {
+                    \Illuminate\Support\Facades\DB::table('order_events')->insert([
+                        'order_id'   => $order->id,
+                        'event_type' => 'item_product_swapped',
+                        'metadata'   => json_encode(['antes' => $item->sku, 'depois' => $novoSku, 'via' => 'proxy_hub_mul422b']),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+                return $respProxy;
             }
 
             $r = $this->svc->updateItem(

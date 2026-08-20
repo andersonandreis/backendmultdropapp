@@ -1333,8 +1333,14 @@ class WebhookOrderService
         }
         $existente = $q->first();
 
-        if ($existente && self::pedidoTemTrocaManual((int) $order->id)) {
-            $existente->update(array_diff_key($values, array_flip(self::CAMPOS_PROTEGIDOS_POS_SWAP)));
+        if (self::pedidoTemTrocaManual((int) $order->id)) {
+            // MUL-422b: em pedido com troca manual o sync tambem NAO cria linha nova —
+            // recriar a linha-mae do kit fazia o explodeOrder do fanout deletar o
+            // componente trocado e ressuscitar o SKU errado. Atualiza so os campos
+            // nao-protegidos dos itens que ja existem.
+            if ($existente) {
+                $existente->update(array_diff_key($values, array_flip(self::CAMPOS_PROTEGIDOS_POS_SWAP)));
+            }
             return;
         }
 

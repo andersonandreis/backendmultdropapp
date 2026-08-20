@@ -506,7 +506,7 @@ class WebhookOrderService
                 $coverImg = $cover?->url ?: $cover?->original_url;
             }
 
-            OrderItem::updateOrCreate(
+            self::upsertPreservandoTrocaManual($order, 
                 [
                     'order_id'              => $order->id,
                     'external_item_id'      => $mlItemId,
@@ -910,6 +910,9 @@ class WebhookOrderService
                     ->orderBy('id')
                     ->first();
                 if ($orfao) {
+                    if (self::pedidoTemTrocaManual((int) $order->id)) {
+                        $values = array_diff_key($values, array_flip(self::CAMPOS_PROTEGIDOS_POS_SWAP));
+                    }
                     $orfao->update($values + [
                         'external_item_id'      => (string) $externalItemId,
                         'external_variation_id' => $externalVariationId,
@@ -918,7 +921,7 @@ class WebhookOrderService
                 }
             }
 
-            OrderItem::updateOrCreate(
+            self::upsertPreservandoTrocaManual($order, 
                 [
                     'order_id'              => $order->id,
                     'external_item_id'      => (string) $externalItemId,
@@ -1160,7 +1163,7 @@ class WebhookOrderService
                 $values['product_image'] = $image;
             }
 
-            OrderItem::updateOrCreate(
+            self::upsertPreservandoTrocaManual($order, 
                 [
                     'order_id'              => $order->id,
                     'external_item_id'      => (string) $itemId,
@@ -1231,7 +1234,7 @@ class WebhookOrderService
                 $coverImg = $cover?->url ?: $cover?->original_url;
             }
 
-            OrderItem::updateOrCreate(
+            self::upsertPreservandoTrocaManual($order, 
                 [
                     'order_id'              => $order->id,
                     'external_item_id'      => $mlItemId,
@@ -1299,5 +1302,42 @@ class WebhookOrderService
                 'canal' => $canal, 'referencia' => $referencia, 'erro' => $e->getMessage(),
             ]);
         }
+    }
+    // ========================================================================
+    // MUL-422: troca manual de SKU vence o mapeamento do marketplace.
+    // O snapshot/webhook/enricher regravava o item pelo anuncio e desfazia o
+    // item_product_swapped feito pelo painel (caso 157788: swap 12:38:51,
+    // snapshot Shopee 12:41:07 reverteu). Em pedido com troca manual registrada,
+    // o UPDATE vindo do sync preserva os campos de produto; criacao de item novo
+    // e pedidos sem troca seguem exatamente como antes.
+    // ========================================================================
+
+    private const CAMPOS_PROTEGIDOS_POS_SWAP = [
+        'sku', 'variation_sku', 'name', 'product_id', 'client_product_id',
+        'supplier_unit_cost', 'supplier_total_cost', 'legacy_sku_pai_id', 'product_image',
+    ];
+
+    private static function pedidoTemTrocaManual(int $orderId): bool
+    {
+        return \Illuminate\Support\Facades\DB::table('order_events')
+            ->where('order_id', $orderId)
+            ->where('event_type', 'item_product_swapped')
+            ->exists();
+    }
+
+    private static function upsertPreservandoTrocaManual(Order $order, array $keys, array $values): void
+    {
+        $q = OrderItem::query();
+        foreach ($keys as $k => $v) {
+            $v === null ? $q->whereNull($k) : $q->where($k, $v);
+        }
+        $existente = $q->first();
+
+        if ($existente && self::pedidoTemTrocaManual((int) $order->id)) {
+            $existente->update(array_diff_key($values, array_flip(self::CAMPOS_PROTEGIDOS_POS_SWAP)));
+            return;
+        }
+
+        OrderItem::updateOrCreate($keys, $values);
     }
 }

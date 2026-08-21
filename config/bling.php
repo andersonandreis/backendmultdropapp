@@ -55,4 +55,10 @@ return [
         "jtdrop" => env("BLING_RELAY_ENDPOINT_JTDROP", "https://api.jtdrop.com.br/api/oauth/bling/wl-relay"),
         "dropksr" => env("BLING_RELAY_ENDPOINT_DROPKSR", "https://api.dropksr.com.br/api/oauth/bling/wl-relay"),
     ],
+    /*
+    | MUL-427: fallback de etiqueta pelo Bling do seller quando o marketplace
+    | recusa o documento (tracking_invalid / label_unavailable). Ler via config().
+    */
+    'seller_label_fallback' => env('BLING_SELLER_LABEL_FALLBACK', true),
+
 ];

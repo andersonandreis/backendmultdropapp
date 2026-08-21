@@ -200,6 +200,34 @@ class FetchShippingLabelJob implements ShouldQueue, ShouldBeUnique
                     // mapReasonToCode e adivinhacao por palavra-chave em texto livre e
                     // so deve valer como ultimo recurso.
                     $reasonCode = $result['reason_code'] ?? $this->mapReasonToCode($result['reason'] ?? '');
+
+                    // MUL-427: o marketplace recusou o documento, mas seller com Bling
+                    // conectado costuma ter a etiqueta la (o proprio Bling recebe o AWB
+                    // pela integracao dele). Mesmo desfecho do fluxo normal + anotacao
+                    // de metodo alternativo no pedido. Receita provada manualmente na
+                    // MUL-426 (21/08/2026, 3 etiquetas reais com a Shopee recusando).
+                    if (in_array($reasonCode, ['tracking_invalid', 'label_unavailable'], true)) {
+                        $alt = app(\App\Services\Labels\BlingSellerLabelFallback::class)->tentar($order);
+                        if ($alt && ! empty($alt['ready'])) {
+                            $order->update([
+                                'order_processing_status' => 'awaiting_dispatch',
+                                'label_status_reason'     => null,
+                                'label_error_at'          => null,
+                            ]);
+
+                            OrderLabelQueue::where('order_id', $order->id)
+                                ->update(['status' => 'available', 'error_log' => 'MUL-427: etiqueta via Bling do seller']);
+
+                            Log::info('[FetchLabel] Etiqueta via Bling do seller (MUL-427)', [
+                                'order_id'  => $order->id,
+                                'label_url' => $alt['label_url'],
+                            ]);
+
+                            \App\Jobs\FanoutOrderWebhookJob::dispatch($order->id, 'order.updated', ['action' => 'label_fetch']);
+                            return;
+                        }
+                    }
+
                     $this->setLabelReason($order, $reasonCode);
 
                     // MUL-354: estado terminal encerra o retry aqui.

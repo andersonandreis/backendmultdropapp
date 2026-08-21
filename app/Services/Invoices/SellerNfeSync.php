@@ -185,6 +185,12 @@ class SellerNfeSync
         }
 
         $sync->forceFill(['status' => 'resolved', 'reason' => null])->save();
+
+        // MUL-455: invoice_* foi escrito com updateQuietly (sem observer) — sem este
+        // fanout explicito o WL nunca recebia numero/serie/chave da NF (medido 21/08:
+        // hub com NF preenchida e painel em branco).
+        FanoutOrderWebhookJob::dispatch($order->id, 'order.updated', ['action' => 'invoice_synced']);
+
         return $this->resultado('nf_ok', null, $agiu);
     }
 

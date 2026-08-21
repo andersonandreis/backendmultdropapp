@@ -61,6 +61,7 @@ Route::prefix('api/federation')->middleware(['api', 'auth.federation'])->group(f
     Route::post('orders/{id}/pay', [\App\Http\Controllers\Api\V1\OrderController::class, 'payFromFederation'])->whereNumber('id');
     Route::post('orders/{id}/label', [\App\Http\Controllers\Api\V1\OrderController::class, 'generateLabelFromFederation'])->whereNumber('id');
     Route::post('orders/{id}/invoice', [\App\Http\Controllers\Api\V1\OrderController::class, 'addInvoiceFromFederation'])->whereNumber('id');
+    Route::post('orders/{id}/invoice-xml', [\App\Http\Controllers\Api\V1\OrderController::class, 'addInvoiceXmlFromFederation'])->whereNumber('id'); // MUL-455
     Route::post('orders/{id}/dispute', [\App\Http\Controllers\Api\V1\OrderDisputeController::class, 'disputeFromFederation'])->whereNumber('id');
     Route::post('orders/{id}/dispute/import-note', [\App\Http\Controllers\Api\V1\OrderDisputeController::class, 'importNoteFromFederation'])->whereNumber('id');
     Route::post('orders/{id}/label-fetch', [\App\Http\Controllers\Api\V1\OrderLabelInvoiceController::class, 'requestLabelFromFederation'])->whereNumber('id');

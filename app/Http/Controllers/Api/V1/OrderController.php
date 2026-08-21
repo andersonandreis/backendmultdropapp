@@ -2027,6 +2027,62 @@ class OrderController extends Controller
     /**
      * INF-054 R4 F2: addInvoice via federation. Grava campos NF-e (dropshipper manual).
      */
+    /**
+     * MUL-455: anexar NF manual por XML — o arquivo e a UNICA entrada; numero, serie,
+     * chave e emissao sao extraidos dele (decisao do Ruan: nada de digitar campo).
+     * Na WL, proxy pro hub (as contas de marketplace do pedido vivem la).
+     */
+    public function addInvoiceXml(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'xml' => ['required', 'string', 'max:1048576'],
+        ]);
+
+        if (HubProxyHelper::isWl()) {
+            $order = Order::find($id);
+            $hubId = $order && $order->hubai_order_id ? $order->hubai_order_id : $id;
+            $u = $request->user();
+            $c = $u ? $u->client : null;
+
+            return HubProxyHelper::forwardToHub('post', "/orders/$hubId/invoice-xml", [
+                'xml'       => $validated['xml'],
+                'client_id' => $c ? ($c->hubai_id ?? $c->id) : null,
+            ]);
+        }
+
+        $client = $this->clientOrFail($request);
+        $order  = Order::where('client_id', $client->id)->findOrFail($id);
+
+        $r = app(\App\Services\Invoices\ManualNfeXmlService::class)->anexar($order, $validated['xml']);
+
+        return response()->json($r, ! empty($r['ok']) ? 200 : 422);
+    }
+
+    /** MUL-455: recepcao federativa do anexo manual de NF por XML (mesmos guards do addInvoiceFromFederation). */
+    public function addInvoiceXmlFromFederation(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'client_id' => ['required', 'integer'],
+            'xml'       => ['required', 'string', 'max:1048576'],
+        ]);
+        $tenantSlug = $request->attributes->get('federation_tenant');
+        $client = \App\Models\Client::find($request->input('client_id'));
+        if (! $client) {
+            return response()->json(['error' => 'client_not_found'], 404);
+        }
+        $order = Order::where('id', $id)->where('client_id', $client->id)->first();
+        if (! $order) {
+            return response()->json(['error' => 'order_not_found'], 404);
+        }
+        if (! $this->tenantAuthorizedForOrder($tenantSlug, $order)) {
+            return response()->json(['error' => 'tenant_not_authorized'], 403);
+        }
+
+        $r = app(\App\Services\Invoices\ManualNfeXmlService::class)->anexar($order, (string) $request->input('xml'));
+
+        return response()->json($r, ! empty($r['ok']) ? 200 : 422);
+    }
+
     public function addInvoiceFromFederation(Request $request, int $id): \Illuminate\Http\JsonResponse
     {
         $request->validate([

@@ -536,6 +536,7 @@ Route::middleware(['auth:sanctum', 'check.user.active', 'supplier.panel'])->pref
         Route::delete('/orders/{id}/block', [OrderController::class, 'unblockOrder']);
         Route::post('/orders/{id}/label', [OrderController::class, 'generateLabel']);
         Route::post('/orders/{id}/invoice', [OrderController::class, 'addInvoice']);
+        Route::post('/orders/{id}/invoice-xml', [OrderController::class, 'addInvoiceXml']); // MUL-455
         Route::post('/orders/{id}/ship', [OrderController::class, 'markShipped']);
         Route::post('/orders/{id}/pay',  [OrderController::class, 'pay']);
         Route::patch('/orders/{id}/notes', [OrderController::class, 'updateNotes']); // MUL-112

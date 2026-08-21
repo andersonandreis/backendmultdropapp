@@ -10,16 +10,15 @@ use App\Models\OrderLabelQueue;
 use App\Services\Integrations\Marketplaces\ShopeeService;
 use App\Support\NfeXmlParser;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * MUL-455: anexo MANUAL de NF-e por XML — o arquivo e a unica entrada.
  *
  * Decisao do Ruan (21/08): o formulario nao pede numero/serie/chave — tudo e extraido
- * do XML. O XML e o que o marketplace precisa (upload_invoice_doc), o que o sistema
- * arquiva (privado, MUL-424) e o que se anexa no Bling se precisar. Depois do anexo,
- * roda a MESMA perna de marketplace da cadeia automatica (MUL-454): invoice na Shopee
- * + organizar o envio (ship_order) — e destrava pedido que estava em nfe_failed.
+ * do XML, e o XML e TRANSITORIO: serve pro envio ao marketplace (upload_invoice_doc) e
+ * e descartado; o painel guarda numero/serie/chave/emissao. Depois do anexo, roda a
+ * MESMA perna de marketplace da cadeia automatica (MUL-454): invoice na Shopee +
+ * organizar o envio (ship_order) — e destrava pedido que estava em nfe_failed.
  *
  * Roda no HUB (as contas de marketplace dos pedidos vivem aqui); a WL chega via proxy
  * de federacao com o XML no corpo JSON.
@@ -34,17 +33,15 @@ class ManualNfeXmlService
             return ['ok' => false, 'error' => 'xml_invalido — não foi possível extrair número e chave da NF-e'];
         }
 
-        // arquiva no disco PRIVADO (MUL-424: NF-e so por autenticacao)
-        $path = 'nfe/manual-nfe-' . $order->id . '-' . substr(md5($xml), 0, 8) . '.xml';
-        Storage::disk('local')->put($path, $xml);
-
+        // O XML e TRANSITORIO (decisao do Ruan 21/08): serve pro envio ao marketplace e
+        // e descartado — o painel guarda numero, serie, chave e emissao. Nada de acumular
+        // arquivo; o unico PDF guardado no sistema e o da NF do FORNECEDOR (nfe_entrada).
         $order->updateQuietly(array_filter([
             'invoice_number'     => $dados['numero'],
             'invoice_series'     => $dados['serie'],
             'invoice_access_key' => $dados['chave'],
             'invoice_issued_at'  => $dados['emissao'],
             'invoice_status'     => 'authorized',
-            'invoice_xml_url'    => $path,
         ], fn ($v) => $v !== null && $v !== ''));
         $this->anotar($order, 'NF-e anexada manualmente pelo seller (XML) — nº ' . $dados['numero']
             . ($dados['serie'] ? ' série ' . $dados['serie'] : ''));

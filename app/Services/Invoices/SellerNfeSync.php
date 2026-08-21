@@ -11,7 +11,6 @@ use App\Services\Integrations\Erps\Bling\BlingAuthService;
 use App\Services\Integrations\Marketplaces\ShopeeService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * MUL-454: etapa "Nota Fiscal" automatizada — o que o Bling deveria fazer e nao retenta.
@@ -156,12 +155,15 @@ class SellerNfeSync
     private function nfAutorizada(Order $order, OrderInvoiceSync $sync, array $nf, MarketplaceAccount $accShopee, string $sn): array
     {
         $agiu = false;
-        $xml = $this->arquivarNf($order, $nf);
+        $this->preencherDadosNf($order, $nf);
 
         $inv = $this->shopee->getInvoiceData($accShopee, $sn);
         $invStatus = is_array($inv) ? (string) ($inv['status'] ?? 'pending') : null;
 
         if ($invStatus !== null && $invStatus !== 'valid') {
+            // XML e TRANSITORIO (decisao do Ruan 21/08): baixa so pra enviar ao
+            // marketplace, nao arquiva — nada de acumular arquivo.
+            $xml = $this->baixarXmlTransitorio($nf);
             if ($xml === null) {
                 return $this->falha($order, $sync, 'NF-e autorizada mas o XML nao pode ser baixado do Bling para envio a Shopee');
             }
@@ -195,10 +197,12 @@ class SellerNfeSync
     }
 
     /**
-     * Preenche invoice_* e arquiva XML/DANFE. NUNCA no disco publico (MUL-424) —
-     * NF-e so por autenticacao. Retorna o conteudo do XML quando disponivel.
+     * O painel guarda so os DADOS da NF do seller: numero, serie, chave e emissao
+     * (decisao do Ruan 21/08). Nem XML nem DANFE sao arquivados — o XML e transitorio
+     * (so pro envio ao marketplace) e o unico PDF que o sistema guarda e o da NF do
+     * FORNECEDOR (nfe_entrada), que o seller baixa no painel.
      */
-    private function arquivarNf(Order $order, array $nf): ?string
+    private function preencherDadosNf(Order $order, array $nf): void
     {
         $update = array_filter([
             'invoice_number'     => $nf['numero'] ?? null,
@@ -209,30 +213,18 @@ class SellerNfeSync
         if ($order->invoice_status !== 'marketplace_valid') {
             $update['invoice_status'] = 'authorized';
         }
-
-        $xmlContent = null;
-        if (! empty($nf['xml'])) {
-            $r = Http::timeout(30)->get($nf['xml']); // campo xml e um LINK de download
-            if ($r->ok() && $r->body() !== '') {
-                $xmlContent = $r->body();
-                if (empty($order->invoice_xml_url)) {
-                    $path = 'nfe/nfe-' . $order->id . '-' . substr(md5($xmlContent), 0, 8) . '.xml';
-                    Storage::disk('local')->put($path, $xmlContent);
-                    $update['invoice_xml_url'] = $path;
-                }
-            }
-        }
-        if (empty($order->invoice_url) && ! empty($nf['linkPDF'])) {
-            $pdf = Http::timeout(30)->get($nf['linkPDF']);
-            if ($pdf->ok() && str_starts_with($pdf->body(), '%PDF')) {
-                $path = 'nfe/danfe-' . $order->id . '-' . substr(md5($pdf->body()), 0, 8) . '.pdf';
-                Storage::disk('local')->put($path, $pdf->body());
-                $update['invoice_url'] = $path;
-            }
-        }
         $order->updateQuietly($update);
+    }
 
-        return $xmlContent;
+    /** Baixa o XML da NF (campo xml do Bling e um LINK) — em memoria, sem gravar em disco. */
+    private function baixarXmlTransitorio(array $nf): ?string
+    {
+        if (empty($nf['xml'])) {
+            return null;
+        }
+        $r = Http::timeout(30)->get($nf['xml']);
+
+        return ($r->ok() && $r->body() !== '') ? $r->body() : null;
     }
 
     /**

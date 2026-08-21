@@ -799,6 +799,31 @@ class ShippingLabelService
             if (! $create['ok']) {
                 $failMsg = strtolower((string) ($create['message'] ?? ''));
 
+                // MUL-456: create recusado quase sempre significa que NINGUEM organizou o
+                // envio (ship_order) — o Bling faria isso por fora e, quando falha, falha em
+                // silencio. Medido 21/08: 10 pedidos com invoice "valid" e shipping_parameter
+                // "organizavel" presos horas em awaiting_marketplace. Organizar e idempotente
+                // ("ja organizado/despachado" volta already). Se organizou AGORA, o documento
+                // entra em geracao — retry curto resolve, sem depender do Bling do seller.
+                if (! str_contains($failMsg, 'has been shipped')) {
+                    $arr = $shopeeService->arrangeShipment($account, $orderSn);
+                    if (! empty($arr['ok']) && empty($arr['already'])) {
+                        Log::warning('[Label/Shopee] Envio organizado pelo sistema (ship_order) — MUL-456', [
+                            'order_id' => $order->id, 'order_sn' => $orderSn,
+                        ]);
+                        $order->updateQuietly([
+                            'admin_note' => trim((string) ($order->admin_note ? $order->admin_note . "\n" : '')
+                                . '[' . now()->format('d/m/Y H:i') . '] Envio organizado na Shopee pelo sistema (ship_order) — libera a geracao da etiqueta (MUL-456)'),
+                        ]);
+                        return [
+                            'ready'            => false,
+                            'reason'           => 'Envio organizado agora (ship_order) — documento de etiqueta em geracao.',
+                            'reason_code'      => 'awaiting_marketplace',
+                            'retry_in_minutes' => 5,
+                        ];
+                    }
+                }
+
                 // Encomenda ja despachada — etiqueta nunca mais vai sair. Nao adianta retentar.
                 if (str_contains($failMsg, 'has been shipped')) {
                     return [

@@ -217,6 +217,23 @@ class FetchShippingLabelJob implements ShouldQueue, ShouldBeUnique
                         && \Illuminate\Support\Carbon::parse($refEspera)->lt(now()->subMinutes(45));
 
                     if (in_array($reasonCode, ['tracking_invalid', 'label_unavailable'], true) || $presoHaMuito) {
+                        // MUL-454: antes do fallback de etiqueta, atacar a CAUSA — a NF do
+                        // seller (o Bling nao transmitiu a invoice a Shopee e/ou nunca
+                        // organizou o envio; ver MUL-429). Se a cadeia AGIU, o caminho
+                        // primario resolve: retry curto e sai. Se as tentativas esgotaram,
+                        // o alerta ja foi emitido la dentro e a fila encerrada.
+                        $nfe = app(\App\Services\Invoices\SellerNfeSync::class)->garantir($order);
+                        if (! empty($nfe['acted'])) {
+                            $this->setLabelReason($order, 'awaiting_marketplace');
+                            self::dispatch($this->orderId, $this->trigger)->delay(now()->addMinutes(5));
+                            Log::info('[FetchLabel] Cadeia NF do seller agiu (MUL-454)', [
+                                'order_id' => $order->id, 'state' => $nfe['state'],
+                            ]);
+                            return;
+                        }
+                        if (! empty($nfe['exhausted'])) {
+                            return;
+                        }
                         $alt = app(\App\Services\Labels\BlingSellerLabelFallback::class)->tentar($order);
                         if ($alt && ! empty($alt['ready'])) {
                             $order->update([

@@ -2374,4 +2374,130 @@ class ShopeeService implements MarketplaceInterface
 
         return $stats;
     }
+
+    // =========================================================================
+    // MUL-454 — NF do seller na Shopee + organizacao do envio (o processo que o
+    // Bling faz por fora e que libera o pedido). Chamadas diretas assinadas: a
+    // bridge nao faz multipart e estas rotas nao existem la.
+    // =========================================================================
+
+    private function assinaturaDireta(string $path, int $ts, string $token, int $shopId): string
+    {
+        return hash_hmac('sha256', $this->partnerId . $path . $ts . $token . $shopId, $this->partnerKey);
+    }
+
+    /**
+     * invoice_data do pedido — o canal BR bloqueia o documento de envio ate a
+     * invoice ficar 'valid' (causa raiz MUL-429).
+     */
+    public function getInvoiceData(MarketplaceAccount $account, string $orderSn): ?array
+    {
+        $token = $this->getValidAccessToken($account);
+        $shopId = (int) $this->getShopId($account);
+        if (! $token || ! $shopId) {
+            return null;
+        }
+        $path = '/api/v2/order/get_order_detail';
+        $ts = time();
+        $res = Http::timeout(20)->get('https://partner.shopeemobile.com' . $path, [
+            'partner_id' => (int) $this->partnerId, 'timestamp' => $ts, 'access_token' => $token,
+            'shop_id' => $shopId, 'sign' => $this->assinaturaDireta($path, $ts, $token, $shopId),
+            'order_sn_list' => $orderSn, 'response_optional_fields' => 'invoice_data',
+        ])->json();
+
+        return $res['response']['order_list'][0]['invoice_data'] ?? null;
+    }
+
+    /**
+     * Envia o XML da NF-e a Shopee (upload_invoice_doc). file_type=4 (XML) — o PDF
+     * do DANFE e recusado com "File error" (medido MUL-429). Limite 1MB.
+     */
+    public function uploadInvoiceXml(MarketplaceAccount $account, string $orderSn, string $xmlContent): array
+    {
+        $token = $this->getValidAccessToken($account);
+        $shopId = (int) $this->getShopId($account);
+        if (! $token || ! $shopId) {
+            return ['ok' => false, 'error' => 'auth', 'message' => 'token/shop_id ausente'];
+        }
+        if (strlen($xmlContent) > 1024 * 1024) {
+            return ['ok' => false, 'error' => 'file_too_big', 'message' => 'XML acima de 1MB'];
+        }
+        $path = '/api/v2/order/upload_invoice_doc';
+        $ts = time();
+        $url = 'https://partner.shopeemobile.com' . $path . '?' . http_build_query([
+            'partner_id' => (int) $this->partnerId, 'timestamp' => $ts, 'access_token' => $token,
+            'shop_id' => $shopId, 'sign' => $this->assinaturaDireta($path, $ts, $token, $shopId),
+        ]);
+        $res = Http::timeout(30)
+            ->attach('file', $xmlContent, 'nfe-' . $orderSn . '.xml')
+            ->post($url, ['order_sn' => $orderSn, 'file_type' => 4]);
+        $body = $res->json() ?? [];
+        $ok = $res->successful() && ($body['error'] ?? '') === '';
+
+        return ['ok' => $ok, 'error' => $body['error'] ?? ($ok ? '' : 'http_' . $res->status()), 'message' => $body['message'] ?? ''];
+    }
+
+    /**
+     * Organiza o envio (arrange shipment): get_shipping_parameter + ship_order.
+     * Sem esse passo o create_shipping_document responde "not yet ready" pra sempre
+     * (provado nos 4 presos de 21/08 — MUL-454). "Ja organizado/despachado" volta
+     * ok+already, nao e falha.
+     */
+    public function arrangeShipment(MarketplaceAccount $account, string $orderSn): array
+    {
+        $token = $this->getValidAccessToken($account);
+        $shopId = (int) $this->getShopId($account);
+        if (! $token || ! $shopId) {
+            return ['ok' => false, 'already' => false, 'error' => 'auth', 'message' => 'token/shop_id ausente'];
+        }
+
+        $path = '/api/v2/logistics/get_shipping_parameter';
+        $ts = time();
+        $param = Http::timeout(20)->get('https://partner.shopeemobile.com' . $path, [
+            'partner_id' => (int) $this->partnerId, 'timestamp' => $ts, 'access_token' => $token,
+            'shop_id' => $shopId, 'sign' => $this->assinaturaDireta($path, $ts, $token, $shopId),
+            'order_sn' => $orderSn,
+        ])->json() ?? [];
+
+        if (($param['error'] ?? '') !== '') {
+            $msg = strtolower((string) ($param['message'] ?? $param['error']));
+            if (str_contains($msg, 'arrang') || str_contains($msg, 'shipped') || str_contains($msg, 'not eligible for rescheduling') || str_contains($msg, 'wrong order status')) {
+                return ['ok' => true, 'already' => true, 'error' => '', 'message' => (string) ($param['message'] ?? '')];
+            }
+
+            return ['ok' => false, 'already' => false, 'error' => (string) $param['error'], 'message' => (string) ($param['message'] ?? '')];
+        }
+
+        $info = $param['response']['info_needed'] ?? [];
+        $resp = $param['response'] ?? [];
+        $payload = ['order_sn' => $orderSn];
+        if (array_key_exists('pickup', $info)) {
+            $addr = $resp['pickup']['address_list'][0] ?? [];
+            $payload['pickup'] = [
+                'address_id'     => $addr['address_id'] ?? 0,
+                'pickup_time_id' => $addr['time_slot_list'][0]['pickup_time_id'] ?? '',
+            ];
+        } elseif (array_key_exists('dropoff', $info)) {
+            $branch = $resp['dropoff']['branch_list'][0]['branch_id'] ?? null;
+            // BR/Correios: info_needed.dropoff=[] -> objeto VAZIO (provado 21/08 nos 3 presos)
+            $payload['dropoff'] = $branch ? ['branch_id' => $branch] : new \stdClass();
+        } else {
+            $payload['non_integrated'] = new \stdClass();
+        }
+
+        $path = '/api/v2/logistics/ship_order';
+        $ts = time();
+        $url = 'https://partner.shopeemobile.com' . $path . '?' . http_build_query([
+            'partner_id' => (int) $this->partnerId, 'timestamp' => $ts, 'access_token' => $token,
+            'shop_id' => $shopId, 'sign' => $this->assinaturaDireta($path, $ts, $token, $shopId),
+        ]);
+        $ship = Http::timeout(20)->post($url, $payload)->json() ?? [];
+        $ok = ($ship['error'] ?? '') === '';
+        $msg = strtolower((string) ($ship['message'] ?? ''));
+        if (! $ok && (str_contains($msg, 'arrang') || str_contains($msg, 'shipped') || str_contains($msg, 'not eligible for rescheduling'))) {
+            return ['ok' => true, 'already' => true, 'error' => '', 'message' => (string) ($ship['message'] ?? '')];
+        }
+
+        return ['ok' => $ok, 'already' => false, 'error' => (string) ($ship['error'] ?? ''), 'message' => (string) ($ship['message'] ?? '')];
+    }
 }

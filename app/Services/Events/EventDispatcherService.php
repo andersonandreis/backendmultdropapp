@@ -68,6 +68,7 @@ class EventDispatcherService
                 'order.delivered' => 'Pedido entregue',
                 'order.cancelled' => 'Pedido cancelado',
                 'order.returned'  => 'Pedido devolvido',
+                'label.nfe_failed' => 'Nota fiscal com problema (etiqueta travada)', // MUL-454
             ],
             'Pagamentos' => [
                 'payment.confirmed'     => 'Pagamento confirmado',

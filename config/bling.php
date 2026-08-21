@@ -61,4 +61,10 @@ return [
     */
     'seller_label_fallback' => env('BLING_SELLER_LABEL_FALLBACK', true),
 
+    // MUL-454: cadeia automatica da NF do seller — observar a NF no Bling, transmitir
+    // a SEFAZ se pendente, enviar o XML a Shopee (invoice) e organizar o envio
+    // (ship_order). Tentativas limitadas; esgotou -> alerta seller/admin no painel.
+    'seller_nfe_sync' => env('BLING_SELLER_NFE_SYNC', true),
+    'seller_nfe_max_attempts' => (int) env('BLING_SELLER_NFE_MAX_ATTEMPTS', 5),
+
 ];

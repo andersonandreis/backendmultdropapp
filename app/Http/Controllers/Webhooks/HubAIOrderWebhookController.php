@@ -555,6 +555,38 @@ class HubAIOrderWebhookController extends Controller
                 ]);
             }
 
+            // MUL-454: a cadeia de NF do seller esgotou as tentativas no hub — alertar
+            // seller e admin NO PAINEL. O motivo detalhado viaja no proprio evento
+            // (nfe_motivo): vira anotacao no pedido (visivel no detalhe pros dois) e
+            // evento in-app 'label.nfe_failed' pra quem assina. O chip vermelho nas
+            // listas vem do label_status_reason='nfe_failed', que espelha pelo campo
+            // normal do payload. Dedup pelo proprio texto do motivo na anotacao.
+            try {
+                if (($payload['data']['action'] ?? null) === 'nfe_failed') {
+                    $motivo = trim((string) ($payload['data']['nfe_motivo'] ?? 'nota fiscal com problema'));
+                    $marca = mb_substr($motivo, 0, 80);
+                    if ($marca !== '' && ! str_contains((string) $order->admin_note, $marca)) {
+                        $linha = '[' . now()->format('d/m/Y H:i') . '] ALERTA: nota fiscal do pedido com problema — '
+                            . $motivo . ' (tentativas automaticas esgotadas, MUL-454)';
+                        $order->forceFill([
+                            'admin_note' => trim(($order->admin_note ? $order->admin_note . "\n" : '') . $linha),
+                        ])->saveQuietly();
+                        app(\App\Services\Events\EventDispatcherService::class)->dispatch('label.nfe_failed', [
+                            'order_id'     => $order->id,
+                            'order_number' => $order->order_number,
+                            'motivo'       => $motivo,
+                        ], $order->supplier_id);
+                        Log::warning('[MUL-454] Alerta de NF falhada registrado no pedido', [
+                            'order_id' => $order->id, 'motivo' => $motivo,
+                        ]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('[MUL-454] Falha ao processar alerta nfe_failed', [
+                    'order_id' => $order->id, 'error' => $e->getMessage(),
+                ]);
+            }
+
             // MUL-417: a transportadora tambem se resolve AQUI, porque este e o evento que
             // de fato acontece. Medido em 18/08/2026: das 301 etiquetas dos ultimos 2 dias,
             // 293 chegaram espelhadas do hub e so 8 foram baixadas por este backend — o

@@ -226,7 +226,8 @@ class CombinedLabelService
             return $img;
         }
         $rel = substr($img, strlen('/storage/'));
-        if (is_file(Storage::disk((string) config('filesystems.labels_disk', 'public'))->path($rel))) {
+        // MUL-424b: aqui e literalmente a pergunta 'o PUBLICO ainda tem?' — fica no disk public.
+        if (is_file(Storage::disk('public')->path($rel))) {
             return $img; // publico ainda tem — nada muda
         }
         $priv = Storage::disk('local')->path($rel);

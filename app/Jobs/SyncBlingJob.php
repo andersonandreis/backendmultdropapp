@@ -86,7 +86,7 @@ class SyncBlingJob implements ShouldQueue
                 // MUL-212 F2: guard por instalacao (banco) — so o trecho de PEDIDOS;
                 // products/stock seguem normais
                 $cfg = app(\App\Services\InstallationConfig::class);
-                if ($cfg->pullsOrders('bling') && ! $cfg->skipsCentralAccountPull((bool) $account->centrally_managed)) {
+                if ($cfg->pullsOrders('bling')) { // fix: WL puxa contas centrally_managed do Bling (hub nao puxa Bling - MUL-311)
                     $results["orders"] = $orderSync->syncAll($account);
                     Log::info("Bling order sync done", $results["orders"]);
                 } else {

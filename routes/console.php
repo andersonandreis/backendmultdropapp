@@ -374,7 +374,7 @@ Schedule::call(function () {
         ->where('status', 'active')
         ->whereNotNull('bling_access_token')
         ->whereNull('sync_blocked_at')
-        ->when(! $cfg->isHub(), fn ($q) => $q->where('centrally_managed', false))
+        // fix varredura pedidos: NAO filtra centrally_managed — o relay do hub (BlingRelayController/MUL-188) reseta cm=1 e parava o sync; getValidToken cobre token gerido pelo hub
         ->chunkById(20, function ($accounts) {
             foreach ($accounts as $account) {
                 \App\Jobs\SyncBlingJob::dispatch($account->id, 'orders');

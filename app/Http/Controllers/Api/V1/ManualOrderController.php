@@ -580,19 +580,27 @@ class ManualOrderController extends Controller
         $user   = $request->user();
         $client = $user?->client;
 
-        if (! $client) {
+        // MUL-426: admin/fornecedor tambem sobe etiqueta manual (a operacao usa o
+        // painel admin quando o marketplace nao libera o documento — caso 21/08,
+        // 7 pedidos com a Shopee recusando o create e a etiqueta ja no Seller Center).
+        $isElevado = in_array($user?->role, ['super_admin', 'admin', 'supplier'], true);
+
+        if (! $client && ! $isElevado) {
             return response()->json(["error" => "no_client"], 422);
         }
 
-        // Validacao do arquivo: somente PDF, max 10240 KB (10MB).
-        // mimetypes valida o mime real, mimes valida a extensao.
+        // MUL-426: alem de PDF, aceita imagem — e o formato que o Seller Center e o
+        // Bling entregam. 10MB max.
         $request->validate([
-            "label" => "required|file|mimetypes:application/pdf|mimes:pdf|max:10240",
+            "label"  => "required|file|mimetypes:application/pdf,image/png,image/jpeg|mimes:pdf,png,jpg,jpeg|max:10240",
+            "motivo" => "nullable|string|max:200",
         ]);
 
-        $order = Order::where("id", $id)
-            ->where("client_id", $client->id)
-            ->first();
+        $q = Order::where("id", $id);
+        if (! $isElevado) {
+            $q->where("client_id", $client->id);
+        }
+        $order = $q->first();
 
         if (! $order) {
             // Resposta unica para nao revelar existencia de pedido de outro tenant.
@@ -601,16 +609,58 @@ class ManualOrderController extends Controller
 
         try {
             $file = $request->file("label");
-            $path = $file->store(sprintf("etiquetas-manuais/%d", $client->id), "public");
+            $ext  = strtolower($file->getClientOriginalExtension() ?: 'pdf');
 
+            // MUL-424: etiqueta NUNCA vai pro storage publico — labels_disk (privado),
+            // solta em labels/ para o proxy autenticado servir como qualquer outra.
+            $nome = sprintf('manual-%d-%s.%s', $order->id, substr(md5(uniqid('', true)), 0, 8), $ext);
+            $disk = \Illuminate\Support\Facades\Storage::disk((string) config('filesystems.labels_disk', 'public'));
+            $path = $disk->putFileAs('labels', $file, $nome);
+
+            $motivo = trim((string) $request->input('motivo', '')) ?: 'etiqueta via metodo alternativo (upload manual)';
+
+            // MUL-426: o pedido registra o metodo alternativo e PARA de retentar na API:
+            // label_url preenchida encerra os loops de fetch (gate padrao), e o motivo
+            // fica em manual_reason + anotacao do admin.
             $order->update([
                 "manual_label_path"        => $path,
                 "manual_label_uploaded_at" => now(),
+                "manual_reason"            => $motivo,
+                "label_url"                => '/storage/labels/' . $nome,
+                "label_status_reason"      => null,
+                "label_error_at"           => null,
+                "admin_note"               => trim(((string) $order->admin_note) . "\n" .
+                    '[' . now()->format('d/m/Y H:i') . '] Etiqueta por metodo alternativo (upload manual por ' . ($user->name ?? $user->email) . '): ' . $motivo),
             ]);
+
+            // Com etiqueta em maos, o pedido avanca pra esteira de despacho (MUL-378).
+            if (in_array($order->order_processing_status, [null, '', 'awaiting_label', 'label_failed', 'awaiting_hub'], true)) {
+                $order->forceFill(['order_processing_status' => 'awaiting_dispatch'])->saveQuietly();
+            }
+
+            // MUL-426: avisa o hub para encerrar a fila de retentativa da etiqueta la.
+            if (! empty($order->hubai_order_id)) {
+                try {
+                    \Illuminate\Support\Facades\Http::timeout(10)->connectTimeout(5)
+                        ->withHeaders([
+                            'X-Federation-Tenant' => (string) config('app.tenant'),
+                            'X-Federation-Secret' => (string) (config('services.hubai_federation.secret') ?: env('FEDERATION_HMAC_SECRET', '')),
+                        ])->post(rtrim((string) config('services.hubai_federation.storage_url', 'https://api.hubai.io'), '/')
+                            . '/api/federation/orders/' . (int) $order->hubai_order_id . '/label-resolved-manually', [
+                            'motivo' => $motivo,
+                            'tenant' => (string) config('app.tenant'),
+                        ]);
+                } catch (\Throwable $e) {
+                    Log::warning('[MUL-426] hub nao avisado do manual-label (segue local)', [
+                        'order_id' => $order->id, 'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             Log::info("[ManualOrder] Etiqueta manual recebida", [
                 "order_id"  => $order->id,
-                "client_id" => $client->id,
+                "client_id" => $order->client_id,
+                "por"       => $user->id,
                 "path"      => $path,
                 "size_kb"   => round($file->getSize() / 1024, 1),
             ]);
@@ -619,6 +669,7 @@ class ManualOrderController extends Controller
                 "ok"        => true,
                 "order_id"  => $order->id,
                 "path"      => $path,
+                "label_url" => $order->label_url,
                 "message"   => "Etiqueta manual enviada com sucesso.",
             ], 200);
         } catch (\Throwable $e) {

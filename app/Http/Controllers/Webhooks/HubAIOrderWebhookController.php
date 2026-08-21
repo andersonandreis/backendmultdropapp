@@ -403,6 +403,29 @@ class HubAIOrderWebhookController extends Controller
                 // nao existe. Ausencia de dado la nao e informacao nova aqui.
                 // =============================================================
 
+
+                // MUL-425: o espelho nao REBAIXA status de expedicao. Durante a queda do
+                // DNS (21/08/2026) o picking andou LOCAL; um fanout atrasado do hub com
+                // status antigo nao pode voltar pedido embalado/enviado para processing.
+                // Cancelamento/reembolso continuam valendo sempre (nunca sao rebaixamento).
+                $ordemDeEstagio = [
+                    'created' => 0, 'pending' => 0, 'pending_payment' => 0,
+                    'processing' => 1, 'paid' => 1, 'confirmed' => 1,
+                    'processed' => 2,
+                    'shipped' => 3, 'delivered' => 4, 'completed' => 5,
+                ];
+                $canonNovo  = $update['canonical_status'] ?? null;
+                $canonAtual = (string) $order->canonical_status;
+                if ($canonNovo !== null
+                    && !in_array($canonNovo, ['cancelled', 'refunded'], true)
+                    && isset($ordemDeEstagio[$canonNovo], $ordemDeEstagio[$canonAtual])
+                    && $ordemDeEstagio[$canonNovo] < $ordemDeEstagio[$canonAtual]) {
+                    \Illuminate\Support\Facades\Log::info('[MUL-425] status do hub rebaixaria o local — ignorado', [
+                        'order_id' => $order->id, 'local' => $canonAtual, 'hub' => $canonNovo,
+                    ]);
+                    unset($update['canonical_status'], $update['status']);
+                }
+
                 // A etiqueta e um ARQUIVO que existe neste storage. Null do hub nao apaga.
                 if (array_key_exists('label_url', $update) && $update['label_url'] === null && ! empty($order->label_url)) {
                     unset($update['label_url']);

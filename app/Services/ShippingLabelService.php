@@ -782,6 +782,23 @@ class ShippingLabelService
                 $statusPrevio = $shopeeService->getShippingDocumentStatus($account, $orderSn, $packageNumber);
             }
 
+            // MUL-457: organizar o envio (ship_order) e PRE-REQUISITO do documento e
+            // roda AQUI, proativo, na mesma execucao — nao se espera o create falhar
+            // (a Shopee aceita o create sem erro mesmo sem envio organizado e o
+            // documento fica "em geracao" pra sempre; medido no 158057 em 21/08).
+            // E o mesmo passo que o Bling faria por fora; "ja organizado" custa 1 GET.
+            if (! $veioDoEvento && $statusPrevio !== 'READY') {
+                $arr = $shopeeService->arrangeShipment($account, $orderSn);
+                if (! empty($arr['ok']) && empty($arr['already'])) {
+                    Log::warning('[Label/Shopee] Envio organizado pelo sistema (ship_order) — MUL-457 proativo', [
+                        'order_id' => $order->id, 'order_sn' => $orderSn,
+                    ]);
+                    $order->updateQuietly([
+                        'admin_note' => trim((string) ($order->admin_note ? $order->admin_note . "\n" : '')
+                            . '[' . now()->format('d/m/Y H:i') . '] Envio organizado na Shopee pelo sistema (ship_order) — libera a geracao da etiqueta (MUL-457)'),
+                    ]);
+                }
+            }
             if ($veioDoEvento || $statusPrevio === 'READY') {
                 Log::info('[Label/Shopee] Documento disponivel — pulando create', [
                     'order_id' => $order->id, 'order_sn' => $orderSn,

@@ -66,7 +66,7 @@ class EtiquetaCombinadaImagem
             return [];
         }
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk((string) config('filesystems.labels_disk', 'public'));
 
         // MUL-445b: arquivo SOLTO em labels/, sem subpasta. O painel busca a imagem
         // pelo proxy autenticado (/api/v1/proxy/storage/labels/{arquivo}), que so
@@ -263,7 +263,7 @@ class EtiquetaCombinadaImagem
             return [];
         }
 
-        $disk    = Storage::disk('public');
+        $disk    = Storage::disk((string) config('filesystems.labels_disk', 'public'));
         $base    = str_replace('.png', '', $chaveDaEtiqueta);
         $padH    = (int) round(4 * self::MM);
         $largura = self::LARGURA - (2 * $padH);
@@ -701,7 +701,7 @@ class EtiquetaCombinadaImagem
             return false;
         }
 
-        Storage::disk('public')->put($rel, $res->body());
+        Storage::disk((string) config('filesystems.labels_disk', 'public'))->put($rel, $res->body());
 
         return true;
     }
@@ -722,8 +722,8 @@ class EtiquetaCombinadaImagem
         if (str_starts_with($url, '/storage/')) {
             $rel = ltrim(substr($url, 9), '/');
 
-            return Storage::disk('public')->exists($rel)
-                ? Storage::disk('public')->get($rel)
+            return Storage::disk((string) config('filesystems.labels_disk', 'public'))->exists($rel)
+                ? Storage::disk((string) config('filesystems.labels_disk', 'public'))->get($rel)
                 : null;
         }
 
@@ -754,7 +754,7 @@ class EtiquetaCombinadaImagem
         }
 
         $rel  = ltrim(substr($url, 9), '/');
-        $disk = Storage::disk('public');
+        $disk = Storage::disk((string) config('filesystems.labels_disk', 'public'));
 
         // MUL-447: nem toda etiqueta esta em disco AQUI. Quem baixa do marketplace
         // costuma ser o hub, e esta WL serve o arquivo por proxy -- em 19/08/2026 o

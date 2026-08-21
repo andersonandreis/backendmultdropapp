@@ -35,7 +35,7 @@ class LabelPdfRenderer
 
         $leftRel  = $this->cachePath($relPath, 1, 'left');
         $rightRel = $this->cachePath($relPath, 1, 'right');
-        $disk     = Storage::disk('public');
+        $disk     = Storage::disk((string) config('filesystems.labels_disk', 'public'));
 
         // cache: se a metade esquerda ja existe, o split ja foi feito
         if ($disk->exists($leftRel)) {
@@ -112,7 +112,7 @@ class LabelPdfRenderer
     public function trimmedPageToUrl(string $relPath, int $page = 1): ?string
     {
         $out  = $this->cachePath($relPath, $page, 'trim');
-        $disk = Storage::disk('public');
+        $disk = Storage::disk((string) config('filesystems.labels_disk', 'public'));
         if ($disk->exists($out)) {
             return '/storage/' . $out;
         }
@@ -149,7 +149,7 @@ class LabelPdfRenderer
      */
     public function trimmedImageToUrl(string $relPath): ?string
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk((string) config('filesystems.labels_disk', 'public'));
         $out  = $this->cachePath($relPath, 1, 'imgtrim');
 
         if ($disk->exists($out)) {
@@ -210,7 +210,7 @@ class LabelPdfRenderer
     public function pageToPng(string $relPath, int $page = 1): ?string
     {
         $out  = $this->cachePath($relPath, $page);
-        $disk = Storage::disk('public');
+        $disk = Storage::disk((string) config('filesystems.labels_disk', 'public'));
         if ($disk->exists($out)) {
             return $out;
         }
@@ -298,7 +298,7 @@ class LabelPdfRenderer
      */
     public function footerStrip(string $relPath): ?string
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk((string) config('filesystems.labels_disk', 'public'));
         if (!$disk->exists($relPath)) {
             return null;
         }

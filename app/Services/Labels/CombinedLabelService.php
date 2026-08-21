@@ -90,7 +90,7 @@ class CombinedLabelService
             && str_starts_with($labelImage, '/storage/')
             && str_ends_with(strtolower($labelImage), '.pdf')) {
             $parsed = $this->mlPdf->parse(
-                Storage::disk('public')->path(substr($labelImage, strlen('/storage/')))
+                Storage::disk((string) config('filesystems.labels_disk', 'public'))->path(substr($labelImage, strlen('/storage/')))
             );
             if ($parsed) {
                 $labelData = $parsed['label'];
@@ -226,7 +226,7 @@ class CombinedLabelService
             return $img;
         }
         $rel = substr($img, strlen('/storage/'));
-        if (is_file(Storage::disk('public')->path($rel))) {
+        if (is_file(Storage::disk((string) config('filesystems.labels_disk', 'public'))->path($rel))) {
             return $img; // publico ainda tem — nada muda
         }
         $priv = Storage::disk('local')->path($rel);

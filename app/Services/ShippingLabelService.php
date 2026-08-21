@@ -506,7 +506,7 @@ class ShippingLabelService
         if ($xml->failed() || !str_contains($xml->body(), '<infNFe')) {
             return null;
         }
-        Storage::disk('public')->put($filename, $xml->body());
+        Storage::disk((string) config('filesystems.labels_disk', 'public'))->put($filename, $xml->body());
         Log::info("[Label] XML NF-e baixado: {$filename} para Order #{$order->id}");
         return $filename;
     }

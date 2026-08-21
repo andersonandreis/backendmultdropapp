@@ -206,7 +206,17 @@ class FetchShippingLabelJob implements ShouldQueue, ShouldBeUnique
                     // pela integracao dele). Mesmo desfecho do fluxo normal + anotacao
                     // de metodo alternativo no pedido. Receita provada manualmente na
                     // MUL-426 (21/08/2026, 3 etiquetas reais com a Shopee recusando).
-                    if (in_array($reasonCode, ['tracking_invalid', 'label_unavailable'], true)) {
+                    // MUL-427b: a Shopee tem uma classe de pedidos que fica HORAS em
+                    // "document not yet ready" na Open API enquanto o Seller Center e o
+                    // Bling ja imprimem (medido 21/08: logistics READY + create recusando
+                    // por 2h). Preso em awaiting_marketplace alem do razoavel tambem vai
+                    // pro fallback — o transitorio real se resolve em minutos.
+                    $refEspera = $order->wallet_paid_at ?: $order->created_at;
+                    $presoHaMuito = $reasonCode === 'awaiting_marketplace'
+                        && $refEspera
+                        && \Illuminate\Support\Carbon::parse($refEspera)->lt(now()->subMinutes(45));
+
+                    if (in_array($reasonCode, ['tracking_invalid', 'label_unavailable'], true) || $presoHaMuito) {
                         $alt = app(\App\Services\Labels\BlingSellerLabelFallback::class)->tentar($order);
                         if ($alt && ! empty($alt['ready'])) {
                             $order->update([

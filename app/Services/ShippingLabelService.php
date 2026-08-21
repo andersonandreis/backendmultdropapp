@@ -841,6 +841,19 @@ class ShippingLabelService
                 // para eliminar.
                 if ($create['error'] === 'logistics.package_can_not_print'
                     && ! str_contains($failMsg, 'not yet ready')) {
+                    // MUL-428: a recusa seca tambem e ambigua em pedido NOVO (mesma
+                    // familia SEL-413/MUL-372). Em 21/08 dois pedidos foram marcados
+                    // terminais no MINUTO 1 de vida e a etiqueta saiu horas depois —
+                    // so o varredor de 10min os manteve vivos. Jovem (<48h) retenta;
+                    // cada retentativa tambem passa pelo fallback Bling (MUL-427).
+                    if ($order->created_at && $order->created_at->diffInHours(now()) < 48) {
+                        return [
+                            'ready'            => false,
+                            'reason'           => 'Marketplace recusou o documento (pedido novo) — retentando.',
+                            'reason_code'      => 'label_unavailable',
+                            'retry_in_minutes' => 15,
+                        ];
+                    }
                     return [
                         'ready'            => false,
                         'reason'           => 'O marketplace nao libera a etiqueta deste pedido.',

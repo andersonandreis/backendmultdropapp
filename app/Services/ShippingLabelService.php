@@ -58,6 +58,12 @@ class ShippingLabelService
             return $this->checkBlingLabel($order);
         }
 
+        // MUL-463: pedido importado da API do Bling (varredura MUL-413) — sem legacy_id,
+        // com bling_order_id. Busca a etiqueta direto no Bling do seller (ex.: Amazon DBA).
+        if ($order->source === 'bling' && $order->bling_order_id) {
+            return $this->checkBlingApiLabel($order);
+        }
+
         if ($order->source === 'shopee') {
             return $this->checkShopeeLabel($order);
         }
@@ -1248,4 +1254,92 @@ class ShippingLabelService
     }
 
 
+
+    /**
+     * MUL-463: etiqueta de pedido importado da API do Bling (sem legado).
+     *
+     * O proprio Bling recebe a etiqueta do marketplace (ex.: Amazon DBA) e a expoe em
+     * logisticas/etiquetas por id do pedido de venda. Conteudo pode ser PDF ou ZIP com
+     * ZPL termico (MUL-461) — sniffing por magic bytes. "Nao possuem logistica" e
+     * transitorio: o Bling gera quando o marketplace emite; retry de 30 min.
+     */
+    protected function checkBlingApiLabel(Order $order): array
+    {
+        $aguardando = [
+            'ready'            => false,
+            'reason'           => 'Etiqueta ainda nao disponivel no Bling do seller.',
+            'reason_code'      => 'awaiting_marketplace',
+            'retry_in_minutes' => 30,
+        ];
+
+        // MUL-463b: DBA = Delivery By Amazon — a etiqueta e emitida na AMAZON (Seller
+        // Central) e o Bling NAO a possui (404 "nao possuem logistica cadastrada" ate
+        // em pedido enviado). Orienta o anexo manual e retenta raramente.
+        if (stripos((string) $order->carrier_name, 'amazon dba') !== false) {
+            return [
+                'ready'            => false,
+                'reason'           => 'Etiqueta emitida pela Amazon (DBA) — baixe no Seller Central e anexe manualmente.',
+                'reason_code'      => 'amazon_dba_manual',
+                'retry_in_minutes' => 720,
+            ];
+        }
+
+        $acc = null;
+        if ($order->marketplace_account_id) {
+            $acc = MarketplaceAccount::where('id', $order->marketplace_account_id)
+                ->where('platform', 'bling')->first();
+        }
+        if (! $acc && $order->client_id) {
+            $acc = MarketplaceAccount::where('client_id', $order->client_id)
+                ->where('platform', 'bling')->where('status', 'active')
+                ->whereNotNull('bling_access_token')->first();
+        }
+        if (! $acc) {
+            return ['ready' => false, 'reason' => 'Conta Bling do pedido nao encontrada.', 'reason_code' => 'missing_marketplace_account', 'retry_in_minutes' => 120];
+        }
+
+        try {
+            $token = app(\App\Services\Integrations\Erps\Bling\BlingAuthService::class)->getValidToken($acc);
+            if (! $token) {
+                return ['ready' => false, 'reason' => 'Token Bling invalido — reconectar.', 'reason_code' => 'token_error', 'retry_in_minutes' => 120];
+            }
+
+            usleep(400000); // rate limit Bling 3 req/s
+            $r = \Illuminate\Support\Facades\Http::withToken($token)->timeout(20)
+                ->get(config('bling.api_base', 'https://api.bling.com.br/Api/v3') . '/logisticas/etiquetas?idsVendas[]=' . $order->bling_order_id . '&formato=PDF');
+            $link = $r->json()['data'][0]['link'] ?? null;
+            if (! $link) {
+                return $aguardando; // inclui "nao possuem logistica" (transitorio)
+            }
+
+            $bin = \Illuminate\Support\Facades\Http::timeout(30)->get($link);
+            if (! $bin->successful() || strlen($bin->body()) < 1000) {
+                return $aguardando;
+            }
+            $corpo = $bin->body();
+            if (str_starts_with($corpo, '%PDF')) {
+                $ext = 'pdf';
+            } elseif (str_starts_with($corpo, 'PK')) {
+                $zpl = $this->extractZplFromZip($corpo);
+                $corpo = $zpl ? $this->convertZplToPng($zpl) : null;
+                if (! $corpo) {
+                    return $aguardando;
+                }
+                $ext = 'png';
+            } else {
+                return $aguardando;
+            }
+
+            $nome = sprintf('bling-%d-%s.%s', $order->id, substr(md5(uniqid('', true)), 0, 8), $ext);
+            Storage::disk((string) config('filesystems.labels_disk', 'public'))
+                ->put('labels/' . $nome, $corpo);
+
+            return ['ready' => true, 'label_url' => '/storage/labels/' . $nome];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[MUL-463] checkBlingApiLabel falhou', [
+                'order_id' => $order->id, 'erro' => $e->getMessage(),
+            ]);
+            return $aguardando;
+        }
+    }
 }

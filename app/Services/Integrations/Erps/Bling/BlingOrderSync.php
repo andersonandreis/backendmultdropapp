@@ -680,7 +680,7 @@ class BlingOrderSync
      * refresh (o webhook já indica que algo mudou no Bling), mantendo status,
      * rastreio, canal, endereço e capture_payload sincronizados.
      */
-    public function syncSingle(MarketplaceAccount $account, int $blingId): string
+    public function syncSingle(MarketplaceAccount $account, int $blingId, bool $overwrite = false): string
     {
         $detail = $this->client->getOrder($account, $blingId);
         $orderData = $detail["data"] ?? null;
@@ -688,7 +688,7 @@ class BlingOrderSync
             return "skipped";
         }
 
-        return $this->syncOrder($account, $orderData, true);
+        return $this->syncOrder($account, $orderData, true, $overwrite);
     }
 
     /**
@@ -703,7 +703,7 @@ class BlingOrderSync
      * Se nao conseguir a trava em 10s, desiste — outro worker esta cuidando do mesmo
      * pedido, entao nao ha nada a fazer.
      */
-    protected function syncOrder(MarketplaceAccount $account, array $blingOrder, bool $force = false): string
+    protected function syncOrder(MarketplaceAccount $account, array $blingOrder, bool $force = false, bool $overwrite = false): string
     {
         $blingId = $blingOrder["id"] ?? null;
         if (!$blingId) {
@@ -713,8 +713,8 @@ class BlingOrderSync
         $chave = "bling-order-sync:{$account->client_id}:{$blingId}";
 
         try {
-            return Cache::lock($chave, 60)->block(10, function () use ($account, $blingOrder, $force) {
-                return $this->syncOrderSemTrava($account, $blingOrder, $force);
+            return Cache::lock($chave, 60)->block(10, function () use ($account, $blingOrder, $force, $overwrite) {
+                return $this->syncOrderSemTrava($account, $blingOrder, $force, $overwrite);
             });
         } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
             Log::channel('marketplace')->info('[MUL-311] pedido ja sendo processado por outro worker — ignorado', [
@@ -728,7 +728,7 @@ class BlingOrderSync
     /**
      * Sincroniza um pedido individual. NAO chamar direto — use syncOrder(), que trava.
      */
-    protected function syncOrderSemTrava(MarketplaceAccount $account, array $blingOrder, bool $force = false): string
+    protected function syncOrderSemTrava(MarketplaceAccount $account, array $blingOrder, bool $force = false, bool $overwrite = false): string
     {
         $blingId = $blingOrder["id"] ?? null;
         $orderNumber = $blingOrder["numero"] ?? $blingId;
@@ -830,13 +830,13 @@ class BlingOrderSync
             // 10.993 no hub travados no default "created" mesmo com status=paid. O painel
             // le canonical_status, entao o pedido aparecia eternamente como "criado".
             $set = ["status" => $newStatus, "canonical_status" => $newStatus];
-            if (! $existing->tracking_number && ($tracking = $this->extractTracking($orderData))) {
+            if (($overwrite || ! $existing->tracking_number) && ($tracking = $this->extractTracking($orderData))) {
                 $set["tracking_number"] = $tracking;
             }
-            if (! $existing->shipping_mode && ($mode = $this->extractShippingMode($orderData))) {
+            if (($overwrite || ! $existing->shipping_mode) && ($mode = $this->extractShippingMode($orderData))) {
                 $set["shipping_mode"] = $mode;
             }
-            if (! $existing->carrier_name && ($carrier = $this->extractCarrier($account, $orderData))) {
+            if (($overwrite || ! $existing->carrier_name) && ($carrier = $this->extractCarrier($account, $orderData))) {
                 $set["carrier_name"] = $carrier;
             }
             // MUL-135 (decisão Ruan): numeroLoja vai COMPLETO, inclusive o composto
@@ -845,10 +845,10 @@ class BlingOrderSync
             if ($mktId && $mktId !== $existing->marketplace_order_id) {
                 $set["marketplace_order_id"] = $mktId;
             }
-            if (! $existing->channel_name && ($mktName = $this->marketplaceName($account, $orderData))) {
+            if (($overwrite || ! $existing->channel_name) && ($mktName = $this->marketplaceName($account, $orderData))) {
                 $set["channel_name"] = $mktName;
             }
-            if (! $existing->customer_address && ($address = $this->extractAddress($orderData))) {
+            if (($overwrite || ! $existing->customer_address) && ($address = $this->extractAddress($orderData))) {
                 $set["customer_address"] = $address;
             }
             // MUL-133: payload bruto do Bling (nomes originais) — qualquer campo que
@@ -856,7 +856,7 @@ class BlingOrderSync
             $set["capture_payload"] = json_encode($orderData, JSON_UNESCAPED_UNICODE);
 
             // MUL-237: preencher marketplace_created_at se NULL
-            if (! $existing->marketplace_created_at && ! empty($orderData["data"])) {
+            if (($overwrite || ! $existing->marketplace_created_at) && ! empty($orderData["data"])) {
                 $set["marketplace_created_at"] = self::dataDoPedidoBling($orderData["data"]) /* MUL-460 */;
             }
             $existing->update($set);

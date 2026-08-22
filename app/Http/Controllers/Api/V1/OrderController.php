@@ -2235,10 +2235,27 @@ class OrderController extends Controller
             ?: \App\Models\MarketplaceAccount::withoutGlobalScopes()->where('client_id', $order->client_id)->where('platform', 'bling')->where('status', 'active')->first();
         if (! $account) { return response()->json(['error' => 'conta Bling do seller nao encontrada'], 422); }
         try {
-            $res = app(\App\Services\Integrations\Erps\Bling\BlingOrderSync::class)->syncSingle($account, (int) $blingId);
+            // MUL-360 item 12: botao MANUAL = autoritativo. overwrite=true sobrescreve os
+            // campos de envio do Bling (rastreio, transportadora, modo, canal, endereco,
+            // status) mesmo que ja existam. NUNCA toca preco/custo/total/itens.
+            $res = app(\App\Services\Integrations\Erps\Bling\BlingOrderSync::class)->syncSingle($account, (int) $blingId, true);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'falha ao sincronizar', 'message' => mb_substr($e->getMessage(), 0, 200)], 502);
         }
-        return response()->json(['data' => $order->fresh(), 'sync_result' => $res]);
+
+        // MUL-360 item 12: puxa tambem a etiqueta. FetchShippingLabelJob persiste
+        // label_url/label_status_reason e faz fanout. Best-effort: se falhar, o sync
+        // dos dados ja valeu e devolvemos o motivo.
+        $label = null;
+        try {
+            \App\Jobs\FetchShippingLabelJob::dispatchSync($order->id, 'manual');
+            $order->refresh();
+            $ready = ! empty($order->label_url) || ! empty($order->manual_label_path);
+            $label = ['ready' => $ready, 'label_url' => $order->label_url, 'reason' => $ready ? null : ($order->label_status_reason ?: 'awaiting_marketplace')];
+        } catch (\Throwable $e) {
+            $label = ['ready' => false, 'reason' => 'label_error', 'message' => mb_substr($e->getMessage(), 0, 160)];
+        }
+
+        return response()->json(['data' => $order->fresh(), 'sync_result' => $res, 'label' => $label]);
     }
 }

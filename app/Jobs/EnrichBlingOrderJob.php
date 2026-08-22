@@ -158,12 +158,15 @@ class EnrichBlingOrderJob implements ShouldQueue
         }
 
         // Pagamento
+        // MUL-466: dataSaida e a data PREVISTA de expedicao (futura) — usava-la como
+        // paid_at mostrava "Pagamento 24/08" num pedido de 21/08. Usa `data` (dia UTC
+        // do pedido no Bling) com a regra MUL-460: data no futuro clampa em agora.
         if (! $order->paid_at) {
-            $paidRaw = $detail['dataSaida'] ?? $detail['data'] ?? null;
+            $paidRaw = $detail['data'] ?? null;
             if ($paidRaw) {
                 try {
-                    $updates['paid_at'] = Carbon::parse($paidRaw)
-                        ->setTimezone(config('app.timezone'));
+                    $paidEm = Carbon::parse($paidRaw, config('app.timezone'));
+                    $updates['paid_at'] = $paidEm->isAfter(now()) ? now() : $paidEm;
                 } catch (\Throwable) { /* ignora */ }
             }
         }

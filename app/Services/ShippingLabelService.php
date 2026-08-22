@@ -1335,6 +1335,10 @@ class ShippingLabelService
             Storage::disk((string) config('filesystems.labels_disk', 'public'))
                 ->put('labels/' . $nome, $corpo);
 
+            // MUL-463e: como nos demais ramos, quem persiste o label_url e o proprio
+            // check — o job so limpa reason/avanca estado.
+            $order->updateQuietly(['label_url' => '/storage/labels/' . $nome]);
+
             return ['ready' => true, 'label_url' => '/storage/labels/' . $nome];
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('[MUL-463] checkBlingApiLabel falhou', [

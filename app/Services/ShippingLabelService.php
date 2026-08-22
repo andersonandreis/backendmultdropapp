@@ -1340,11 +1340,28 @@ class ShippingLabelService
             Storage::disk((string) config('filesystems.labels_disk', 'public'))
                 ->put('labels/' . $nome, $corpo);
 
-            // MUL-463e: como nos demais ramos, quem persiste o label_url e o proprio
-            // check — o job so limpa reason/avanca estado.
-            $order->updateQuietly(['label_url' => '/storage/labels/' . $nome]);
+            $url = '/storage/labels/' . $nome;
 
-            return ['ready' => true, 'label_url' => '/storage/labels/' . $nome];
+            // MUL-465: PDF (DBA/Amazon) e folha A4 com a etiqueta num canto + paginas
+            // de romaneio — cru no painel fica ilegivel. Recorta a etiqueta (pagina 1
+            // + trim) e serve o PNG limpo; se o render falhar, fica o PDF.
+            if ($ext === 'pdf') {
+                try {
+                    $png = app(\App\Services\Labels\LabelPdfRenderer::class)->trimmedPageToUrl('labels/' . $nome, 1);
+                    if ($png) {
+                        $url = $png;
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('[MUL-465] recorte do PDF de etiqueta falhou', [
+                        'order_id' => $order->id, 'erro' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // MUL-463e: como nos demais ramos, quem persiste o label_url e o proprio check.
+            $order->updateQuietly(['label_url' => $url]);
+
+            return ['ready' => true, 'label_url' => $url];
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('[MUL-463] checkBlingApiLabel falhou', [
                 'order_id' => $order->id, 'erro' => $e->getMessage(),

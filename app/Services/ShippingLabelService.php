@@ -1306,7 +1306,7 @@ class ShippingLabelService
             }
 
             // MUL-464: aproveita o ciclo pra preencher numero/serie/chave da NF (1x)
-            if (empty($order->invoice_number)) {
+            if (empty($order->invoice_number) || empty($order->tracking_number)) { // MUL-464c: rastreio tambem
                 $this->preencherNfDoBling($order, $token);
             }
 

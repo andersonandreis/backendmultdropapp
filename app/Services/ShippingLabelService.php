@@ -1428,7 +1428,8 @@ class ShippingLabelService
         }
         try {
             usleep(400000); // rate limit Bling 3 req/s
-            $det = \Illuminate\Support\Facades\Http::withToken($token)->timeout(20)
+            // MUL-464e: 429 do Bling vinha como vazio e virava falso "sem NF" — retry c/ backoff
+            $det = \Illuminate\Support\Facades\Http::withToken($token)->retry(3, 2000, throw: false)->timeout(20)
                 ->get(config('bling.api_base', 'https://api.bling.com.br/Api/v3') . '/pedidos/vendas/' . $order->bling_order_id)
                 ->json()['data'] ?? [];
             // MUL-464b: mesmo payload tras rastreio e servico logistico — preenche o
@@ -1447,7 +1448,7 @@ class ShippingLabelService
                 return;
             }
             usleep(400000);
-            $nf = \Illuminate\Support\Facades\Http::withToken($token)->timeout(20)
+            $nf = \Illuminate\Support\Facades\Http::withToken($token)->retry(3, 2000, throw: false)->timeout(20)
                 ->get(config('bling.api_base', 'https://api.bling.com.br/Api/v3') . '/nfe/' . $nfeId)
                 ->json()['data'] ?? null;
             if (! is_array($nf) || empty($nf['numero'])) {

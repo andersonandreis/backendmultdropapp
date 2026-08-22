@@ -1431,6 +1431,17 @@ class ShippingLabelService
             $det = \Illuminate\Support\Facades\Http::withToken($token)->timeout(20)
                 ->get(config('bling.api_base', 'https://api.bling.com.br/Api/v3') . '/pedidos/vendas/' . $order->bling_order_id)
                 ->json()['data'] ?? [];
+            // MUL-464b: mesmo payload tras rastreio e servico logistico — preenche o
+            // que faltar (nunca sobrescreve valor existente).
+            $vol = $det['transporte']['volumes'][0] ?? [];
+            $extras = array_filter([
+                'tracking_number' => empty($order->tracking_number) ? ($vol['codigoRastreamento'] ?? null) : null,
+                'carrier_name'    => empty($order->carrier_name) ? ($vol['servico'] ?? null) : null,
+            ], fn ($v) => $v !== null && $v !== '');
+            if ($extras !== []) {
+                $order->updateQuietly($extras);
+            }
+
             $nfeId = $det['notaFiscal']['id'] ?? null;
             if (! $nfeId) {
                 return;

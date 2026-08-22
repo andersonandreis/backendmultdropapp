@@ -1305,6 +1305,11 @@ class ShippingLabelService
                 return ['ready' => false, 'reason' => 'Token Bling invalido — reconectar.', 'reason_code' => 'token_error', 'retry_in_minutes' => 120];
             }
 
+            // MUL-464: aproveita o ciclo pra preencher numero/serie/chave da NF (1x)
+            if (empty($order->invoice_number)) {
+                $this->preencherNfDoBling($order, $token);
+            }
+
             usleep(400000); // rate limit Bling 3 req/s
             $r = \Illuminate\Support\Facades\Http::withToken($token)->timeout(20)
                 ->get(config('bling.api_base', 'https://api.bling.com.br/Api/v3') . '/logisticas/etiquetas?idsVendas[]=' . $order->bling_order_id . '&formato=PDF');
@@ -1392,5 +1397,45 @@ class ShippingLabelService
         }
 
         return null;
+    }
+
+    /**
+     * MUL-464: preenche invoice_* (numero/serie/chave/emissao) a partir da NF vinculada
+     * ao pedido de venda no Bling. Roda 1x por pedido (guard: invoice_number vazio);
+     * pedido ainda sem NF no Bling e ignorado silenciosamente (proximo ciclo tenta).
+     */
+    protected function preencherNfDoBling(Order $order, string $token): void
+    {
+        if (! $order->bling_order_id) {
+            return;
+        }
+        try {
+            usleep(400000); // rate limit Bling 3 req/s
+            $det = \Illuminate\Support\Facades\Http::withToken($token)->timeout(20)
+                ->get(config('bling.api_base', 'https://api.bling.com.br/Api/v3') . '/pedidos/vendas/' . $order->bling_order_id)
+                ->json()['data'] ?? [];
+            $nfeId = $det['notaFiscal']['id'] ?? null;
+            if (! $nfeId) {
+                return;
+            }
+            usleep(400000);
+            $nf = \Illuminate\Support\Facades\Http::withToken($token)->timeout(20)
+                ->get(config('bling.api_base', 'https://api.bling.com.br/Api/v3') . '/nfe/' . $nfeId)
+                ->json()['data'] ?? null;
+            if (! is_array($nf) || empty($nf['numero'])) {
+                return;
+            }
+            $order->updateQuietly(array_filter([
+                'invoice_number'     => $nf['numero'] ?? null,
+                'invoice_series'     => isset($nf['serie']) ? (string) $nf['serie'] : null,
+                'invoice_access_key' => $nf['chaveAcesso'] ?? null,
+                'invoice_issued_at'  => $nf['dataEmissao'] ?? null,
+                'invoice_status'     => in_array((int) ($nf['situacao'] ?? 0), [5, 6, 7], true) ? 'authorized' : null,
+            ], fn ($v) => $v !== null && $v !== ''));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[MUL-464] preencherNfDoBling falhou', [
+                'order_id' => $order->id, 'erro' => $e->getMessage(),
+            ]);
+        }
     }
 }

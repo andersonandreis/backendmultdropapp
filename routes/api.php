@@ -533,6 +533,7 @@ Route::middleware(['auth:sanctum', 'check.user.active', 'supplier.panel'])->pref
     Route::middleware('client.required')->group(function () {
         // MUL-227 item 29: seller bloqueia proprio pedido (com reembolso auto se pago pela carteira)
         Route::post('/orders/{id}/block',   [OrderController::class, 'blockOrder']);
+        Route::post('/orders/{id}/sync-bling-seller', [OrderController::class, 'syncBlingSeller']);
         Route::delete('/orders/{id}/block', [OrderController::class, 'unblockOrder']);
         Route::post('/orders/{id}/label', [OrderController::class, 'generateLabel']);
         Route::post('/orders/{id}/invoice', [OrderController::class, 'addInvoice']);
@@ -816,6 +817,7 @@ Route::middleware(['auth:sanctum', 'check.user.active', 'supplier.panel'])->pref
     Route::post('/supplier-admin/orders/{id}/items/{itemId}/swap-sku', [\App\Http\Controllers\Api\V1\OrderItemsController::class, 'swapSkuAlias'])->whereNumber(['id','itemId']);
     // MUL-264/265: sync Bling do fornecedor + emissao manual de NF-e (saida/entrada)
     Route::post('/supplier-admin/orders/{id}/sync-bling',       [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'syncBling'])->whereNumber('id');
+    Route::post('/supplier-admin/orders/{id}/sync-bling-seller', [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'syncBlingSeller'])->whereNumber('id');
     Route::post('/supplier-admin/orders/{id}/emit-nfe',         [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'emitNfe'])->whereNumber('id');
     // MUL-274: config auto-sync Bling (pedido pago ao fornecedor -> Bling automatico)
     Route::get('/supplier-admin/erp/bling/config',              [\App\Http\Controllers\Api\V1\SupplierAdminPanelController::class, 'blingConfig']);

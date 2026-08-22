@@ -6222,4 +6222,15 @@ class SupplierAdminPanelController extends Controller
         return response()->json(['payment_details' => $details]);
     }
 
+
+    /**
+     * POST /api/v1/supplier-admin/orders/{id}/sync-bling-seller
+     * Puxa o pedido do Bling do SELLER (import). Diferente do syncBling (que EXPORTA pro fornecedor).
+     */
+    public function syncBlingSeller(\Illuminate\Http\Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $this->requireSupplierAdmin($request);
+        $order = \App\Models\Order::withoutGlobalScopes()->findOrFail($id);
+        return \App\Http\Controllers\Api\V1\OrderController::runSyncBlingSeller($order);
+    }
 }

@@ -2211,4 +2211,34 @@ class OrderController extends Controller
 
         return response()->json(['data' => $order->fresh()]);
     }
+
+    /**
+     * POST /api/v1/orders/{id}/sync-bling-seller
+     * Puxa o pedido do Bling do SELLER (import) e atualiza o pedido local.
+     * Usado quando o seller alterou o pedido no Bling e nao houve webhook.
+     */
+    public function syncBlingSeller(\Illuminate\Http\Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $client = $request->user()->client;
+        if (! $client) { return response()->json(['error' => 'sem perfil de client'], 403); }
+        $order = \App\Models\Order::withoutGlobalScopes()->where('id', $id)->where('client_id', $client->id)->first();
+        if (! $order) { return response()->json(['error' => 'pedido nao encontrado'], 404); }
+        return \App\Http\Controllers\Api\V1\OrderController::runSyncBlingSeller($order);
+    }
+
+    public static function runSyncBlingSeller(\App\Models\Order $order): \Illuminate\Http\JsonResponse
+    {
+        if ($order->source !== 'bling') { return response()->json(['error' => 'pedido nao e do Bling'], 422); }
+        $blingId = $order->bling_order_id ?: $order->bling_pedido_id;
+        if (! $blingId) { return response()->json(['error' => 'pedido sem id do Bling do seller'], 422); }
+        $account = \App\Models\MarketplaceAccount::withoutGlobalScopes()->where('id', $order->marketplace_account_id)->where('platform', 'bling')->first()
+            ?: \App\Models\MarketplaceAccount::withoutGlobalScopes()->where('client_id', $order->client_id)->where('platform', 'bling')->where('status', 'active')->first();
+        if (! $account) { return response()->json(['error' => 'conta Bling do seller nao encontrada'], 422); }
+        try {
+            $res = app(\App\Services\Integrations\Erps\Bling\BlingOrderSync::class)->syncSingle($account, (int) $blingId);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'falha ao sincronizar', 'message' => mb_substr($e->getMessage(), 0, 200)], 502);
+        }
+        return response()->json(['data' => $order->fresh(), 'sync_result' => $res]);
+    }
 }

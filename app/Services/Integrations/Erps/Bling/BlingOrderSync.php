@@ -857,7 +857,7 @@ class BlingOrderSync
 
             // MUL-237: preencher marketplace_created_at se NULL
             if (! $existing->marketplace_created_at && ! empty($orderData["data"])) {
-                $set["marketplace_created_at"] = \Carbon\Carbon::parse($orderData["data"])->setTimezone(config("app.timezone"));
+                $set["marketplace_created_at"] = self::dataDoPedidoBling($orderData["data"]) /* MUL-460 */;
             }
             $existing->update($set);
             return "updated";
@@ -924,7 +924,7 @@ class BlingOrderSync
 
                 // MUL-237: preencher marketplace_created_at se NULL (dedup nivel 3)
                 if (! $native->marketplace_created_at && ! empty($orderData["data"])) {
-                    $set["marketplace_created_at"] = \Carbon\Carbon::parse($orderData["data"])->setTimezone(config("app.timezone"));
+                    $set["marketplace_created_at"] = self::dataDoPedidoBling($orderData["data"]) /* MUL-460 */;
                 }
                 $native->update($set);
 
@@ -1078,7 +1078,7 @@ class BlingOrderSync
             "bling_order_id"     => (int) $blingId,
             // MUL-237: campo data do Bling (Y-m-d ou Y-m-d H:i:s) -> marketplace_created_at UTC
             "marketplace_created_at" => ! empty($orderData["data"])
-                ? \Carbon\Carbon::parse($orderData["data"])->setTimezone(config("app.timezone"))
+                ? self::dataDoPedidoBling($orderData["data"]) /* MUL-460 */
                 : null,
         ]);
 
@@ -1327,5 +1327,21 @@ class BlingOrderSync
             ->orderByDesc('is_cover')->orderBy('position')->first();
 
         return $cover?->url ?: $cover?->original_url;
+    }
+
+    /**
+     * MUL-460: o campo `data` do Bling e o DIA EM UTC, date-only. Pedido de 21h-0h BR
+     * chega datado de "amanha" (flip medido as 21h BR = 00:00 UTC). Sem hora no campo,
+     * data futura em relacao a captura = usa o momento da captura (sync de 5 min =>
+     * captura ~= criacao). Datas passadas ficam como o Bling mandou.
+     */
+    private static function dataDoPedidoBling(?string $data): ?\Carbon\Carbon
+    {
+        if (empty($data)) {
+            return null;
+        }
+        $d = \Carbon\Carbon::parse($data, config('app.timezone'));
+
+        return $d->isAfter(now()) ? now() : $d;
     }
 }

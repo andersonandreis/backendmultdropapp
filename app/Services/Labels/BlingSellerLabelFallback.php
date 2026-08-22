@@ -91,14 +91,13 @@ class BlingSellerLabelFallback
                 $ext = 'pdf';
                 $conteudo = $corpo;
             } elseif (str_starts_with($corpo, 'PK')) {
-                $svcEtq = app(\App\Services\ShippingLabelService::class);
-                $zpl = $svcEtq->extractZplFromZip($corpo);
-                $conteudo = $zpl ? $svcEtq->convertZplToPng($zpl) : null;
-                if (! $conteudo) {
-                    Log::warning('[MUL-461] ZIP do Bling sem ZPL conversivel', ['order_id' => $order->id]);
+                $etq = app(\App\Services\ShippingLabelService::class)->extrairEtiquetaDeZip($corpo); // MUL-463d
+                if (! $etq) {
+                    Log::warning('[MUL-461] ZIP do Bling sem etiqueta utilizavel', ['order_id' => $order->id]);
                     return null;
                 }
-                $ext = 'png';
+                $ext = $etq['ext'];
+                $conteudo = $etq['conteudo'];
             } else {
                 Log::warning('[MUL-461] resposta do Bling nao e PDF nem ZIP', ['order_id' => $order->id]);
                 return null;

@@ -1321,12 +1321,12 @@ class ShippingLabelService
             if (str_starts_with($corpo, '%PDF')) {
                 $ext = 'pdf';
             } elseif (str_starts_with($corpo, 'PK')) {
-                $zpl = $this->extractZplFromZip($corpo);
-                $corpo = $zpl ? $this->convertZplToPng($zpl) : null;
-                if (! $corpo) {
+                $etq = $this->extrairEtiquetaDeZip($corpo); // MUL-463d: PDF (Amazon) ou ZPL (Shopee)
+                if (! $etq) {
                     return $aguardando;
                 }
-                $ext = 'png';
+                $ext = $etq['ext'];
+                $corpo = $etq['conteudo'];
             } else {
                 return $aguardando;
             }
@@ -1342,5 +1342,51 @@ class ShippingLabelService
             ]);
             return $aguardando;
         }
+    }
+
+    /**
+     * MUL-463d: extrai a etiqueta de um ZIP — PDF (Amazon DBA) ou ZPL/.txt (Shopee),
+     * ZPL convertido em PNG pelo conversor interno. Null = nada utilizavel.
+     * @return array{ext: string, conteudo: string}|null
+     */
+    public function extrairEtiquetaDeZip(string $zipContent): ?array
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'etq');
+        file_put_contents($tmp, $zipContent);
+        $za = new \ZipArchive();
+        if ($za->open($tmp) !== true) {
+            @unlink($tmp);
+            return null;
+        }
+        $pdf = null;
+        $zpl = null;
+        for ($i = 0; $i < $za->numFiles; $i++) {
+            $nome = strtolower((string) $za->getNameIndex($i));
+            $conteudo = $za->getFromIndex($i);
+            if ($conteudo === false || $conteudo === '') {
+                continue;
+            }
+            if (str_ends_with($nome, '.pdf') || str_starts_with($conteudo, '%PDF')) {
+                $pdf = $conteudo;
+                break;
+            }
+            if (str_ends_with($nome, '.zpl') || str_ends_with($nome, '.txt') || str_starts_with(ltrim($conteudo), '^XA')) {
+                $zpl = $conteudo;
+            }
+        }
+        $za->close();
+        @unlink($tmp);
+
+        if ($pdf !== null) {
+            return ['ext' => 'pdf', 'conteudo' => $pdf];
+        }
+        if ($zpl !== null) {
+            $png = $this->convertZplToPng($zpl);
+            if ($png) {
+                return ['ext' => 'png', 'conteudo' => $png];
+            }
+        }
+
+        return null;
     }
 }

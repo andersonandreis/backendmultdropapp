@@ -77,14 +77,36 @@ class BlingSellerLabelFallback
                 return null;
             }
 
-            $pdf = Http::timeout(30)->get($link); // link S3 assinado, expira em 1h
-            if (! $pdf->successful() || strlen($pdf->body()) < 1000) {
+            $bin = Http::timeout(30)->get($link); // link S3 assinado, expira em 1h
+            if (! $bin->successful() || strlen($bin->body()) < 1000) {
+                return null;
+            }
+            $corpo = $bin->body();
+
+            // MUL-461: o Bling devolve PDF *ou* ZIP com a etiqueta termica ZPL dentro —
+            // salvar o ZIP como .pdf entregava arquivo quebrado (158001, 21/08).
+            // %PDF salva direto; PK extrai o ZPL e converte em PNG pelo MESMO conversor
+            // do caminho Shopee; qualquer outra coisa e recusada (retry natural).
+            if (str_starts_with($corpo, '%PDF')) {
+                $ext = 'pdf';
+                $conteudo = $corpo;
+            } elseif (str_starts_with($corpo, 'PK')) {
+                $svcEtq = app(\App\Services\ShippingLabelService::class);
+                $zpl = $svcEtq->extractZplFromZip($corpo);
+                $conteudo = $zpl ? $svcEtq->convertZplToPng($zpl) : null;
+                if (! $conteudo) {
+                    Log::warning('[MUL-461] ZIP do Bling sem ZPL conversivel', ['order_id' => $order->id]);
+                    return null;
+                }
+                $ext = 'png';
+            } else {
+                Log::warning('[MUL-461] resposta do Bling nao e PDF nem ZIP', ['order_id' => $order->id]);
                 return null;
             }
 
-            $nome = sprintf('bling-%d-%s.pdf', $order->id, substr(md5(uniqid('', true)), 0, 8));
+            $nome = sprintf('bling-%d-%s.%s', $order->id, substr(md5(uniqid('', true)), 0, 8), $ext);
             Storage::disk((string) config('filesystems.labels_disk', 'public'))
-                ->put('labels/' . $nome, $pdf->body());
+                ->put('labels/' . $nome, $conteudo);
             $url = '/storage/labels/' . $nome;
 
             $order->updateQuietly([
@@ -95,7 +117,7 @@ class BlingSellerLabelFallback
             ]);
 
             Log::info('[MUL-427] etiqueta obtida no Bling do seller', [
-                'order_id' => $order->id, 'bling_pedido' => $pedidoId, 'bytes' => strlen($pdf->body()),
+                'order_id' => $order->id, 'bling_pedido' => $pedidoId, 'bytes' => strlen($conteudo),
             ]);
 
             return ['ready' => true, 'label_url' => $url];

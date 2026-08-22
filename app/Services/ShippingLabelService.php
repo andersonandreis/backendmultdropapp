@@ -1099,7 +1099,7 @@ class ShippingLabelService
      * @param  string $zipContent  Bytes binarios do ZIP
      * @return string|null  Conteudo ZPL ou null se nao encontrado
      */
-    protected function extractZplFromZip(string $zipContent): ?string
+    public function extractZplFromZip(string $zipContent): ?string
     {
         $tmpZip = tempnam(sys_get_temp_dir(), 'shopee_label_') . '.zip';
 
@@ -1166,7 +1166,7 @@ class ShippingLabelService
      * @param  string $zpl  Conteudo ZPL
      * @return string|null  Bytes PNG ou null em falha
      */
-    protected function convertZplToPng(string $zpl): ?string
+    public function convertZplToPng(string $zpl): ?string
     {
         // Servico interno (mesmo do legado goolhub) -- 8 dots/mm = 400 DPI
         try {

@@ -1272,15 +1272,16 @@ class ShippingLabelService
             'retry_in_minutes' => 30,
         ];
 
-        // MUL-463b: DBA = Delivery By Amazon — a etiqueta e emitida na AMAZON (Seller
-        // Central) e o Bling NAO a possui (404 "nao possuem logistica cadastrada" ate
-        // em pedido enviado). Orienta o anexo manual e retenta raramente.
-        if (stripos((string) $order->carrier_name, 'amazon dba') !== false) {
+        // MUL-463c: pedido ja despachado/coletado nao tem mais etiqueta no Bling —
+        // apos a coleta o 404 e permanente (medido em DBA 21/08). Nao insistir.
+        // Para os demais, o fetch normal segue: o Bling LIBERA a etiqueta DBA na
+        // janela da Amazon ("Aguardando" -> "disponivel") e o retry pega na hora.
+        if (in_array($order->canonical_status, ['shipped', 'delivered', 'completed'], true)) {
             return [
                 'ready'            => false,
-                'reason'           => 'Etiqueta emitida pela Amazon (DBA) — baixe no Seller Central e anexe manualmente.',
-                'reason_code'      => 'amazon_dba_manual',
-                'retry_in_minutes' => 720,
+                'reason'           => 'Pedido ja despachado — etiqueta nao mais disponivel no Bling.',
+                'reason_code'      => 'already_shipped',
+                'skip_permanently' => true,
             ];
         }
 
